@@ -86,55 +86,54 @@ const OffersPage = () => {
     ];
 
     return (
-        <div className="relative min-h-screen w-full flex flex-col items-center justify-start pt-32 pb-24 bg-[#f8fafc] overflow-hidden">
+        <div className="relative min-h-screen w-full flex flex-col items-center justify-start pt-24 pb-24 bg-[#f8fafc] overflow-hidden">
 
             {/* Advanced Multi-layered background */}
             <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-radiant-coral/10 rounded-full blur-[140px] animate-pulse duration-[10s]" />
+                <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-[#f26a36]/5 rounded-full blur-[140px] animate-pulse duration-[10s]" />
                 <div className="absolute bottom-[5%] right-[-10%] w-[35%] h-[35%] bg-blue-400/10 rounded-full blur-[120px] animate-pulse duration-[8s]" />
                 <div className="absolute top-[30%] right-[15%] w-[20%] h-[20%] bg-purple-400/5 rounded-full blur-[80px] animate-bounce duration-[15s]" />
-
-                {/* Floating particles/shapes */}
-                <div className="absolute top-40 left-[10%] w-32 h-32 border-2 border-radiant-coral/5 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] animate-spin duration-[20s]" />
-                <div className="absolute bottom-60 right-[15%] w-48 h-48 border-2 border-blue-400/5 rounded-[50%_50%_20%_80%/25%_80%_20%_75%] animate-spin-slow" />
             </div>
 
             <div className="relative z-10 w-full max-w-7xl px-6">
 
-                {/* Enhanced Header Section */}
-                <div className="text-center mb-20 space-y-6 animate-in fade-in slide-in-from-top-6 duration-1000">
-                    <div className="inline-flex items-center gap-3 bg-white/70 backdrop-blur-md py-2 px-5 rounded-full text-[10px] font-black uppercase tracking-[0.25em] text-radiant-coral shadow-sm border border-white/50">
+                {/* Enhanced Header Section - Redesigned */}
+                <div className="flex flex-col items-center text-center mt-12 mb-20 space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                    
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-2 bg-[#f26a36]/10 py-2 px-4 rounded-full text-[#f26a36] border border-[#f26a36]/20 shadow-sm">
                         <Gift className="h-4 w-4" />
-                        <span>Curated Savings</span>
+                        <span className="text-[12px] font-bold tracking-widest uppercase">Curated Savings</span>
                     </div>
-                    <div className="relative inline-block">
-                        <h1 className="text-5xl md:text-7xl font-black text-deep-navy tracking-tighter leading-none uppercase italic relative z-10">
-                            Exclusive <span className="text-radiant-coral italic">Offers</span>
-                        </h1>
-                        <div className="absolute -bottom-2 -right-4 w-24 h-24 bg-radiant-coral/10 rounded-full blur-2xl z-0" />
-                    </div>
-                    <p className="text-gray-400 font-bold text-sm max-w-sm mx-auto leading-relaxed uppercase tracking-tighter">
+
+                    {/* Headline */}
+                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-slate-800 leading-[1.1] max-w-4xl mx-auto">
+                        Exclusive{' '}
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-[#f26a36]">
+                            Offers
+                        </span>
+                    </h1>
+
+                    {/* Subtitle */}
+                    <p className="text-slate-500 font-medium text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mt-4">
                         Unlock premium travel experiences with our handpicked discount codes and bank partner deals.
                     </p>
                 </div>
 
-                {/* Glassmorphism Features Bar */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20 max-w-5xl mx-auto">
+                {/* Feature Cards Grid - Redesigned */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 mb-24 max-w-5xl mx-auto px-4 lg:px-0">
                     {[
-                        { icon: Zap, label: "Instant Savings", color: "text-amber-500", bg: "bg-amber-500/10", desc: "Applied directly" },
-                        { icon: ShieldCheck, label: "Verified Deals", color: "text-emerald-500", bg: "bg-emerald-500/10", desc: "100% working" },
-                        { icon: Ticket, label: "Loyalty Perks", color: "text-blue-500", bg: "bg-blue-500/10", desc: "For members" }
+                        { icon: Zap, title: "Instant Savings", desc: "Applied directly at checkout", color: "text-[#f26a36]", bg: "bg-[#f26a36]/10" },
+                        { icon: ShieldCheck, title: "Verified Deals", desc: "100% working & authentic", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+                        { icon: Ticket, title: "Loyalty Perks", desc: "Exclusive to registered members", color: "text-blue-500", bg: "bg-blue-500/10" }
                     ].map((feature, i) => (
-                        <div key={i} className="group relative">
-                            <div className="absolute inset-0 bg-white/40 blur-xl rounded-[32px] group-hover:bg-white/60 transition-all duration-500" />
-                            <div className="relative flex flex-col items-center text-center gap-4 p-8 rounded-[32px] border border-white/80 bg-white/30 backdrop-blur-xl shadow-xl shadow-gray-200/20 hover:-translate-y-2 transition-all duration-500 animate-in fade-in zoom-in-95 delay-[200ms]">
-                                <div className={`w-14 h-14 rounded-2xl ${feature.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-500`}>
-                                    <feature.icon className={`h-7 w-7 ${feature.color}`} />
-                                </div>
-                                <div>
-                                    <p className="text-[11px] font-black text-deep-navy uppercase tracking-[0.15em] mb-1">{feature.label}</p>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{feature.desc}</p>
-                                </div>
+                        <div key={i} className="group flex flex-col items-center sm:items-start text-center sm:text-left gap-4 p-8 rounded-[24px] bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300">
+                            <div className={`w-14 h-14 rounded-full ${feature.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                                <feature.icon className={`h-6 w-6 ${feature.color}`} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <h3 className="text-[17px] font-bold text-slate-800 mb-1">{feature.title}</h3>
+                                <p className="text-[14px] text-slate-500 font-medium">{feature.desc}</p>
                             </div>
                         </div>
                     ))}

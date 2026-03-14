@@ -194,89 +194,140 @@ const TrackTicket = ({ isEmailSmsMode = false }) => {
     }
 
     return (
-        <div className="relative min-h-screen w-full flex flex-col items-center justify-start pt-32 pb-24 bg-[#f8fafc] overflow-hidden">
+        <div className="relative min-h-screen w-full flex flex-col items-center justify-start pt-24 pb-24 bg-[#f8fafc] overflow-hidden">
 
-            {/* Background design consistent with CancelTicket */}
+            {/* Premium Background Design */}
             <div className="absolute inset-0 z-0 pointer-events-none">
-                <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-radiant-coral/5 rounded-full blur-[120px]" />
+                <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#f26a36]/5 rounded-full blur-[120px]" />
                 <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-blue-400/5 rounded-full blur-[100px]" />
+                {/* Abstract flight path lines */}
+                <svg className="absolute top-20 left-0 w-full h-[500px] opacity-[0.03]" viewBox="0 0 1000 500" preserveAspectRatio="none">
+                    <path d="M0,250 Q250,50 500,250 T1000,250" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="10,10" />
+                    <path d="M0,150 Q250,350 500,150 T1000,150" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="5,15" />
+                </svg>
             </div>
 
             <div className="relative z-10 w-full max-w-4xl px-6 flex flex-col items-center">
 
-                {/* Header Section */}
-                <div className="text-center mb-12 space-y-4 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <div className="inline-flex items-center gap-2 bg-radiant-coral/10 py-1.5 px-4 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-radiant-coral">
-                        {isEmailSmsMode ? <Mail className="h-3.5 w-3.5" /> : <Calendar className="h-3.5 w-3.5" />}
-                        <span>{isEmailSmsMode ? 'Ticket Delivery' : 'Track Your Journey'}</span>
+                {/* Header Section - Redesigned */}
+                <div className="text-center mb-10 space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700 mt-8">
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-2 bg-[#f26a36]/10 py-2 px-4 rounded-full text-[#f26a36] border border-[#f26a36]/20 shadow-sm">
+                        {isEmailSmsMode ? <Mail className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
+                        <span className="text-[12px] font-bold tracking-widest uppercase">{isEmailSmsMode ? 'Ticket Delivery' : 'Track Your Journey'}</span>
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-black text-deep-navy tracking-tight leading-none uppercase italic">
-                        {isEmailSmsMode ? 'Email / SMS' : 'Show My'} <span className="text-radiant-coral italic">Ticket</span>
+
+                    {/* Headline */}
+                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-slate-800 leading-[1.1]">
+                        Track Your{' '}
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-[#f26a36]">
+                            Booking
+                        </span>
                     </h1>
-                    <p className="text-gray-400 font-bold text-sm max-w-md mx-auto leading-relaxed">
+
+                    {/* Subtitle */}
+                    <p className="text-slate-500 font-medium text-base md:text-lg max-w-lg mx-auto leading-relaxed mt-4">
                         {isEmailSmsMode
-                            ? "Receive your E-Ticket details instantly on your registered mobile number or email."
-                            : "Access your E-Ticket instantly by entering your booking details below."}
+                            ? "Enter your details to receive your E-Ticket instantly on your mobile or email."
+                            : "Enter your Booking ID and Mobile Number to instantly access your ticket details."}
                     </p>
                 </div>
 
-                {/* Entry Card */}
-                <div className="w-full max-w-2xl bg-white rounded-[40px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.08)] border border-gray-100 overflow-hidden mb-12 animate-in fade-in zoom-in-95 duration-700">
-                    <div className="bg-gradient-to-r from-deep-navy to-[#1e1b4b] p-8 md:p-10 flex items-center gap-6">
-                        <div className="bg-radiant-coral p-3.5 rounded-2xl shadow-lg ring-4 ring-white/10 text-white">
-                            {isEmailSmsMode ? <Mail className="h-6 w-6 stroke-[3px]" /> : <Ticket className="h-6 w-6 stroke-[3px]" />}
+                {/* Entry Card - Premium Redesign */}
+                <div className="w-full max-w-2xl bg-white/70 backdrop-blur-xl rounded-[24px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-white overflow-hidden mb-12 animate-in fade-in zoom-in-95 duration-700">
+                    {/* Gradient Top Bar */}
+                    <div className="bg-gradient-to-r from-slate-900 to-[#1e1b4b] p-8 flex items-center gap-5">
+                        <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 text-white">
+                            {isEmailSmsMode ? <Mail className="h-6 w-6 stroke-[2px]" /> : <Ticket className="h-6 w-6 stroke-[2px]" />}
                         </div>
                         <div>
-                            <h2 className="text-xl md:text-2xl font-black text-white tracking-widest uppercase italic leading-none">Enter Details</h2>
-                            <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.3em] mt-1">Check your Email/SMS for Booking ID</p>
+                            <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">Enter Your Booking Details</h2>
+                            <p className="text-slate-300 text-[13px] font-medium mt-1">Find your Booking ID in your confirmation email or SMS.</p>
                         </div>
                     </div>
 
-                    <div className="p-10 md:p-12 space-y-10">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="p-8 md:p-10 space-y-8 bg-white/50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Booking ID */}
-                            <div className="space-y-3 group">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block group-focus-within:text-radiant-coral transition-colors">
+                            <div className="space-y-2 group">
+                                <label className="text-[13px] font-bold text-slate-700 block transition-colors">
                                     Booking ID / PNR
                                 </label>
-                                <div className="relative border-b-2 border-gray-50 focus-within:border-radiant-coral transition-all duration-500 flex items-center pb-3">
-                                    <Search className="h-6 w-6 text-gray-300 group-focus-within/input:text-radiant-coral mr-4 transition-colors" />
+                                <div className="relative flex items-center">
+                                    <div className="absolute left-4 text-slate-400 group-focus-within:text-[#f26a36] transition-colors z-10">
+                                        <Search className="h-5 w-5" />
+                                    </div>
                                     <input
                                         type="text"
                                         value={bookingId}
                                         onChange={(e) => setBookingId(e.target.value)}
-                                        placeholder="Booking ID"
-                                        className="w-full bg-transparent outline-none text-lg font-black text-deep-navy placeholder:text-gray-200 tracking-tight"
+                                        placeholder="e.g. GOA123456"
+                                        className="w-full bg-white border-2 border-slate-100 hover:border-slate-200 focus:border-[#f26a36] outline-none text-base font-bold text-slate-800 placeholder:text-slate-300 placeholder:font-medium tracking-wide rounded-2xl py-4 pl-12 pr-4 transition-all duration-300 shadow-sm focus:shadow-[0_0_0_4px_rgba(242,106,54,0.1)]"
                                     />
                                 </div>
                             </div>
 
                             {/* Mobile Number */}
-                            <div className="space-y-3 group">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block group-focus-within:text-radiant-coral transition-colors">
+                            <div className="space-y-2 group">
+                                <label className="text-[13px] font-bold text-slate-700 block transition-colors">
                                     Mobile Number
                                 </label>
-                                <div className="relative border-b-2 border-gray-50 focus-within:border-radiant-coral transition-all duration-500 flex items-center pb-3">
-                                    <Smartphone className="h-6 w-6 text-gray-300 group-focus-within/input:text-radiant-coral mr-4 transition-colors" />
+                                <div className="relative flex items-center">
+                                    <div className="absolute left-4 text-slate-400 group-focus-within:text-[#f26a36] transition-colors z-10">
+                                        <Smartphone className="h-5 w-5" />
+                                    </div>
                                     <input
                                         type="tel"
                                         value={mobileNumber}
                                         onChange={(e) => setMobileNumber(e.target.value)}
-                                        placeholder="+91 - Mobile"
-                                        className="w-full bg-transparent outline-none text-lg font-black text-deep-navy placeholder:text-gray-200 tracking-tight"
+                                        placeholder="e.g. +91 9876543210"
+                                        className="w-full bg-white border-2 border-slate-100 hover:border-slate-200 focus:border-[#f26a36] outline-none text-base font-bold text-slate-800 placeholder:text-slate-300 placeholder:font-medium tracking-wide rounded-2xl py-4 pl-12 pr-4 transition-all duration-300 shadow-sm focus:shadow-[0_0_0_4px_rgba(242,106,54,0.1)]"
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        <button
-                            onClick={handleSearch}
-                            className="w-full py-5 bg-gradient-to-r from-radiant-coral to-[#e11d48] text-white rounded-2xl font-black uppercase tracking-[0.4em] text-[10px] shadow-xl shadow-radiant-coral/20 hover:shadow-2xl hover:shadow-radiant-coral/30 hover:scale-[1.01] active:scale-[0.98] transition-all duration-500 group flex items-center justify-center gap-4"
-                        >
-                            <span>{isEmailSmsMode ? 'Send Ticket Details' : 'Fetch Ticket Details'}</span>
-                            <ArrowRight className="h-4 w-4 group-hover:translate-x-1.5 transition-transform" />
-                        </button>
+                        {/* Search Button */}
+                        <div className="pt-2">
+                            <button
+                                onClick={handleSearch}
+                                className="w-full py-4 bg-gradient-to-r from-[#f26a36] to-[#ff8c5a] hover:to-[#f26a36] text-white rounded-full font-black text-sm tracking-widest uppercase shadow-[0_8px_25px_rgba(242,106,54,0.3)] hover:shadow-[0_12px_35px_rgba(242,106,54,0.4)] hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 group flex items-center justify-center gap-3"
+                            >
+                                <span>{isEmailSmsMode ? 'Send Ticket Details' : 'Track Ticket'}</span>
+                                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Quick Help Footer */}
+                    <div className="bg-slate-50 border-t border-slate-100 p-6">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <span className="text-[13px] font-bold text-slate-800">Can't find your Booking ID?</span>
+                            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[12px] font-medium text-slate-500">
+                                <a href="#" className="hover:text-[#f26a36] transition-colors hover:underline">Check Email</a>
+                                <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                                <a href="#" className="hover:text-[#f26a36] transition-colors hover:underline">Check SMS</a>
+                                <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                                <a href="#" className="hover:text-[#f26a36] transition-colors hover:underline font-bold text-[#f26a36]">Contact Support</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Trust Indicators */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl w-full mb-12 border-b border-slate-200 pb-12">
+                    {[
+                        { icon: ShieldCheck, text: "Secure Ticket Lookup" },
+                        { icon: Ticket, text: "Instant Ticket Access" },
+                        { icon: HelpCircle, text: "24/7 Customer Support" }
+                    ].map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-center gap-2 text-slate-600">
+                            <div className="bg-emerald-50 text-emerald-500 rounded-full p-1.5 border border-emerald-100">
+                                <item.icon className="h-4 w-4" />
+                            </div>
+                            <span className="text-[13px] font-bold">{item.text}</span>
+                        </div>
+                    ))}
                 </div>
 
                 {/* Simplified FAQ Section */}
