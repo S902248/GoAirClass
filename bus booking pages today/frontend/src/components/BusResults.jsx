@@ -10,8 +10,25 @@ import SeatSelectionOverlay from './SeatSelectionOverlay';
 import BoardingPointMap from './BoardingPointMap';
 import { searchSchedules } from '../api/scheduleApi';
 import { searchCities } from '../api/cityApi';
-import { getActiveCoupons } from '../api/couponApi';
+import { validateCoupon, getActiveCoupons } from '../api/couponApi';
 import WomenBookingToggle from './WomenBookingToggle';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Haversine formula to calculate distance between two coordinates in km
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return d.toFixed(1);
+};
 
 const calculateDuration = (dep, arr) => {
     const [h1, m1] = dep.split(':').map(Number);
@@ -38,6 +55,25 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
     const [buses, setBuses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeCoupons, setActiveCoupons] = useState([]);
+    const [userLocation, setUserLocation] = useState(null);
+
+    // Geolocation detection
+    useEffect(() => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setUserLocation({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    });
+                    console.log("[GEOLOCATION] User location captured:", position.coords.latitude, position.coords.longitude);
+                },
+                (error) => {
+                    console.warn("[GEOLOCATION] Permission denied or error:", error.message);
+                }
+            );
+        }
+    }, []);
 
     // Local state for the editable search bar
     const [localFrom, setLocalFrom] = useState(searchParams?.fromCity || "");
@@ -143,8 +179,12 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
     };
 
     const handleSearch = () => {
-        if (!localFrom || !localTo || !localDate) {
-            toast.error("Please fill all search fields");
+        if (!localFrom || !localTo) {
+            toast.error("Add first from to", { position: "top-right", theme: "colored" });
+            return;
+        }
+        if (!localDate) {
+            toast.error("Please select a date", { position: "top-right", theme: "colored" });
             return;
         }
 
@@ -211,8 +251,22 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
                 }),
                 liveTracking: true,
                 primo: Math.random() > 0.5,
-                boardingPoints: s.boardingPoints || [],
-                droppingPoints: s.droppingPoints || [],
+                boardingPoints: (s.boardingPoints || []).map(p => ({
+                    ...p,
+                    distance: calculateDistance(userLocation?.lat, userLocation?.lng, p.lat, p.lng)
+                })).sort((a, b) => {
+                    if (a.distance === null) return 1;
+                    if (b.distance === null) return -1;
+                    return parseFloat(a.distance) - parseFloat(b.distance);
+                }),
+                droppingPoints: (s.droppingPoints || []).map(p => ({
+                    ...p,
+                    distance: calculateDistance(userLocation?.lat, userLocation?.lng, p.lat, p.lng)
+                })).sort((a, b) => {
+                    if (a.distance === null) return 1;
+                    if (b.distance === null) return -1;
+                    return parseFloat(a.distance) - parseFloat(b.distance);
+                }),
                 seatLayout: s.bus?.seatLayout || [],
                 singleSeatsAvailable: true
             }));
@@ -224,6 +278,45 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
             setLoading(false);
         }
     };
+
+    // Recalculate distances when user location is detected
+    React.useEffect(() => {
+        if (userLocation) {
+            console.log(">>> [FRONTEND] Detect User Location in BusResults:", userLocation);
+            const updatedBusesList = (buses || []).map(bus => {
+                const updatedBoarding = (bus.boardingPoints || []).map(p => ({
+                    ...p,
+                    distance: calculateDistance(userLocation.lat, userLocation.lng, p.lat, p.lng)
+                })).sort((a, b) => {
+                    if (a.distance === null) return 1;
+                    if (b.distance === null) return -1;
+                    return parseFloat(a.distance) - parseFloat(b.distance);
+                });
+
+                const updatedDropping = (bus.droppingPoints || []).map(p => ({
+                    ...p,
+                    distance: calculateDistance(userLocation.lat, userLocation.lng, p.lat, p.lng)
+                })).sort((a, b) => {
+                    if (a.distance === null) return 1;
+                    if (b.distance === null) return -1;
+                    return parseFloat(a.distance) - parseFloat(b.distance);
+                });
+
+                return {
+                    ...bus,
+                    boardingPoints: updatedBoarding,
+                    droppingPoints: updatedDropping
+                };
+            });
+            setBuses(updatedBusesList);
+
+            // Keep overlay data in sync with the freshest calculated data
+            if (isOverlayOpen && overlayBus) {
+                const updatedBus = updatedBusesList.find(b => b.id === overlayBus.id);
+                if (updatedBus) setOverlayBus(updatedBus);
+            }
+        }
+    }, [userLocation, isOverlayOpen]);
 
     // Helper to format the incoming date (which might be DD-MM-YYYY or a string like "20 Feb") into YYYY-MM-DD for the native date input
     const getInitialDateValue = (dateStr) => {
@@ -761,6 +854,24 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
                                         })()}
 
                                         <div className="p-6">
+                                            {(() => {
+                                                const nearestBP = (bus.boardingPoints || []).filter(p => p.distance).reduce((prev, curr) => {
+                                                    if (!prev || parseFloat(curr.distance) < parseFloat(prev.distance)) return curr;
+                                                    return prev;
+                                                }, null);
+
+                                                if (!nearestBP) return null;
+
+                                                return (
+                                                    <div className="absolute top-0 left-0 bg-[#E0F2FE] px-4 py-2 rounded-br-2xl border-b border-r border-[#BAE6FD] flex items-center gap-2 z-10 shadow-md animate-fade-in-right">
+                                                        <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                                                        <span className="text-[11px] font-black text-blue-800 uppercase tracking-widest flex items-center gap-1.5">
+                                                            <span className="text-base leading-none">⭐</span> 
+                                                            Nearest Boarding: <span className="text-blue-900 font-extrabold">{nearestBP.location}</span> — {nearestBP.distance} km away
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })()}
                                             <div className="flex flex-col md:flex-row items-center gap-8">
                                                 {/* Left: Operator Info */}
                                                 <div className="w-full md:w-[220px]">
@@ -882,6 +993,7 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
                 searchParams={searchParams}
                 isLoggedIn={isLoggedIn}
                 triggerLogin={triggerLogin}
+                userLocation={userLocation}
                 onProceed={(bookingData) => {
                     setSelectedBus(overlayBus);
                     // seats are now full seat objects from processedLayout
@@ -911,6 +1023,7 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
                 title={mapConfig.title}
                 center={mapConfig.center}
             />
+            <ToastContainer />
         </div>
     );
 };

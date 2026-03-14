@@ -321,7 +321,7 @@ function App() {
                     <Route path="/legal/:type" element={<LegalPage />} />
                     <Route path="/flight-results" element={<FlightResults setView={handleNavigate} />} />
                     <Route path="/flight-confirmation/:bookingId" element={<FlightBookingConfirmation />} />
-                    
+
                     {/* Deprecated: Old flight routes now handled by FlightBookingFlow */}
                     <Route path="/flight-review" element={<Navigate to="/flight-booking" replace />} />
                     <Route path="/flight-passengers" element={<Navigate to="/flight-booking" replace />} />

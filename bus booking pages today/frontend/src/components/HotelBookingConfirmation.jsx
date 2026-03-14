@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { CheckCircle2, Star, MapPin, Tag, Home, Download } from 'lucide-react';
 import { downloadInvoice } from '../api/hotelApi';
 
 const HotelBookingConfirmation = () => {

@@ -1,7 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { createFlight, getFlights, searchFlights, getFlightById, updateFlight, deleteFlight } = require('../../controllers/flight/flight.controller');
+const { 
+    createFlight, 
+    getFlights, 
+    searchFlights, 
+    getFlightById, 
+    updateFlight, 
+    deleteFlight,
+    createFlightSchedule 
+} = require('../../controllers/flight/flight.controller');
 
+router.post('/schedules', createFlightSchedule);
 router.post('/', createFlight);
 router.get('/search', searchFlights);
 router.get('/', getFlights);

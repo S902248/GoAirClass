@@ -12,13 +12,17 @@ const scheduleSchema = new mongoose.Schema({
     boardingPoints: [
         {
             location: { type: String, required: true },
-            time: { type: String, required: true }
+            time: { type: String, required: true },
+            lat: { type: Number },
+            lng: { type: Number }
         }
     ],
     droppingPoints: [
         {
             location: { type: String, required: true },
-            time: { type: String, required: true }
+            time: { type: String, required: true },
+            lat: { type: Number },
+            lng: { type: Number }
         }
     ],
     availableSeats: { type: Number, default: 40 }

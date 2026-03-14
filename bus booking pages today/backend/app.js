@@ -48,9 +48,12 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
-// Request logger
+// Request logger - MUST be above routes
 app.use((req, res, next) => {
     console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
+    if (req.body && Object.keys(req.body).length) {
+        console.log("Request Body:", JSON.stringify(req.body, null, 2));
+    }
     next();
 });
 

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plane, Calendar, Users, ArrowRightLeft, ChevronDown, Check, X, MapPin } from 'lucide-react';
 import flightApi from '../api/flightApi';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const backgrounds = [
     "https://images.unsplash.com/photo-1542296332-2e4473faf563?auto=format&fit=crop&q=80&w=2000"
@@ -401,9 +403,18 @@ const FlightHero = ({ setView }) => {
                         {/* Search Button */}
                         <button
                             onClick={() => {
-                                if (!fromAirport || !toAirport) return alert("Please select both origin and destination.");
-                                if (fromAirport.airportCode === toAirport.airportCode) return alert("Origin and destination cannot be the same.");
-                                if (!departureDate) return alert("Please select a departure date.");
+                                if (!fromAirport || !toAirport) {
+                                    toast.error("Add first from to", { position: "top-right", theme: "colored" });
+                                    return;
+                                }
+                                if (fromAirport.airportCode === toAirport.airportCode) {
+                                    toast.error("Origin and destination cannot be the same.", { position: "top-right", theme: "colored" });
+                                    return;
+                                }
+                                if (!departureDate) {
+                                    toast.error("Please select a departure date.", { position: "top-right", theme: "colored" });
+                                    return;
+                                }
 
                                 const params = new URLSearchParams();
                                 params.append('from', fromAirport.airportCode);
@@ -504,6 +515,7 @@ const FlightHero = ({ setView }) => {
                     </div>
                 </div>
             </div>
+            <ToastContainer />
         </section>
     );
 };

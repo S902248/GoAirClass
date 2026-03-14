@@ -1,5 +1,7 @@
 const Flight = require('../../models/flight/flight.model');
 const Airport = require('../../models/flight/airport.model');
+const FlightSchedule = require('../../models/flight/flightSchedule.model');
+const dayjs = require('dayjs');
 
 const searchFlights = async (req, res) => {
     try {
@@ -133,4 +135,92 @@ const deleteFlight = async (req, res) => {
     }
 };
 
-module.exports = { createFlight, searchFlights, getFlights, getFlightById, updateFlight, deleteFlight };
+const createFlightSchedule = async (req, res) => {
+    try {
+        const schedule = new FlightSchedule(req.body);
+        await schedule.save();
+
+        // Trigger generation
+        const flights = await generateFlightsFromSchedule(schedule);
+
+        res.status(201).json({ 
+            success: true, 
+            message: `Schedule created and ${flights.length} flights generated.`,
+            schedule,
+            generatedCount: flights.length
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+const generateFlightsFromSchedule = async (schedule) => {
+    const flights = [];
+    let current = dayjs(schedule.startDate);
+    const end = dayjs(schedule.endDate);
+
+    while (current.isBefore(end) || current.isSame(end, 'day')) {
+        const dayOfWeek = current.day(); // 0-6
+        if (schedule.operatingDays.includes(dayOfWeek)) {
+            // Generate flight for this date
+            const departureDateTime = current
+                .hour(parseInt(schedule.departureTime.split(':')[0]))
+                .minute(parseInt(schedule.departureTime.split(':')[1]))
+                .toDate();
+
+            const arrivalDateTime = dayjs(departureDateTime)
+                .add(parseDuration(schedule.duration), 'minute')
+                .toDate();
+
+            const flight = new Flight({
+                flightNumber: schedule.flightNumber,
+                airlineId: schedule.airlineId,
+                fromAirport: schedule.fromAirport,
+                toAirport: schedule.toAirport,
+                departureTime: departureDateTime,
+                arrivalTime: arrivalDateTime,
+                duration: schedule.duration,
+                aircraftType: schedule.aircraftType,
+                scheduleId: schedule._id,
+                configuration: schedule.configuration,
+                // These are legacy fields but we'll populate them for compatibility
+                totalSeats: schedule.configuration.economy.seats + schedule.configuration.business.seats,
+                availableSeats: schedule.configuration.economy.seats + schedule.configuration.business.seats,
+                price: schedule.configuration.economy.price,
+                status: 'Scheduled'
+            });
+
+            flights.push(flight);
+        }
+        current = current.add(1, 'day');
+    }
+
+    if (flights.length > 0) {
+        await Flight.insertMany(flights);
+    }
+    return flights;
+};
+
+// Helper to parse "2H 30M" or "150" into minutes
+const parseDuration = (dur) => {
+    if (typeof dur === 'number') return dur;
+    if (!isNaN(dur)) return parseInt(dur);
+    
+    let minutes = 0;
+    const hoursMatch = dur.match(/(\d+)H/i);
+    const minsMatch = dur.match(/(\d+)M/i);
+    if (hoursMatch) minutes += parseInt(hoursMatch[1]) * 60;
+    if (minsMatch) minutes += parseInt(minsMatch[1]);
+    
+    return minutes || 120; // Default 2 hours if parsing fails
+};
+
+module.exports = { 
+    createFlight, 
+    searchFlights, 
+    getFlights, 
+    getFlightById, 
+    updateFlight, 
+    deleteFlight,
+    createFlightSchedule
+};

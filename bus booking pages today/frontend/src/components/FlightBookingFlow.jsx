@@ -9,6 +9,7 @@ import {
 import axios from '../api/Axios';
 import { message, Select as AntSelect, DatePicker, Input as AntInput } from 'antd';
 import dayjs from 'dayjs';
+import FlightSeatSelection from './FlightSeatSelection';
 
 const { Option } = AntSelect;
 
@@ -93,10 +94,7 @@ const FlightBookingFlow = () => {
     // Add-ons
     const [addons, setAddons] = useState({ insurance: false, baggage: false, priority: false });
 
-    // Seats
-    const [seats, setSeats] = useState([]); // [{seatNumber, type, booked}]
-    const [selectedSeats, setSelectedSeats] = useState([]); // [{seatNumber, passengerId}]
-    const [activePassengerIdx, setActivePassengerIdx] = useState(0);
+    const [selectedSeats, setSelectedSeats] = useState([]); // [{seatNumber, passengerId, ...}]
 
     // Payment
     const [paymentMethod, setPaymentMethod] = useState('razorpay');
@@ -153,45 +151,13 @@ const FlightBookingFlow = () => {
         fetchProfile();
     }, []);
 
-    // ── Generate mock seat map ──
-    const mockSeats = useMemo(() => {
-        const arr = [];
-        for (let row = 1; row <= 30; row++) {
-            for (const col of SEAT_COLS) {
-                arr.push({
-                    seatNumber: `${row}${col}`,
-                    row, col,
-                    type: row <= 5 ? 'premium' : row <= 10 ? 'legroom' : 'standard',
-                    booked: Math.random() < 0.3,
-                    price: row <= 5 ? 1499 : row <= 10 ? 699 : 399,
-                });
-            }
-        }
-        return arr;
-    }, []);
-
-    useEffect(() => {
-        if (step === 4 && flight?._id) {
-            // Backend exposes: GET /api/seats/:flightId
-            axios.get(`/seats/${flight._id}`)
-                .then(r => {
-                    const seatData = r.data?.seats || r.data?.seatInventory || [];
-                    if (seatData.length > 0) setSeats(seatData);
-                    else setSeats(mockSeats);
-                })
-                .catch(() => setSeats(mockSeats));
-        }
-    }, [step, flight, mockSeats]);
 
     // ── Fare calculation ──
     const baseFare = flight ? flight.price * travellers.length : 0;
     const taxes = Math.round(baseFare * 0.12);
     const convenience = 350 * travellers.length;
     const addonTotal = (addons.insurance ? 199 : 0) + (addons.baggage ? 999 : 0) + (addons.priority ? 299 : 0);
-    const seatTotal = selectedSeats.reduce((acc, ss) => {
-        const seat = seats.find(s => s.seatNumber === ss.seatNumber);
-        return acc + (seat?.price || 0);
-    }, 0);
+    const seatTotal = selectedSeats.reduce((acc, ss) => acc + (ss.price || 0), 0);
     const total = baseFare + taxes + convenience + addonTotal + seatTotal;
 
     // ── Validation ──
@@ -275,7 +241,6 @@ const FlightBookingFlow = () => {
                 flightId: flight._id,
                 passengers: travellers.map(t => {
                     const seat = selectedSeats.find(s => s.passengerId === t.id);
-                    const seatObj = seats.find(s => s.seatNumber === seat?.seatNumber);
                     return {
                         firstName: t.firstName,
                         lastName: t.lastName,
@@ -284,9 +249,9 @@ const FlightBookingFlow = () => {
                         nationality: t.nationality,
                         passportNumber: t.passportNumber,
                         passportExpiry: t.passportExpiry,
-                        seatNumber: seat?.seatNumber || '1A', // fallback seat — avoids required validation failure
-                        seatType: seatObj?.type || 'standard',
-                        seatPrice: seatObj?.price || 0,
+                        seatNumber: seat?.seatNumber || '1A', 
+                        seatType: seat?.type || 'standard',
+                        seatPrice: seat?.price || 0,
                     };
                 }),
                 contactDetails: {
@@ -344,29 +309,8 @@ const FlightBookingFlow = () => {
                 rzp.open();
 
             } catch (apiErr) {
-                console.warn('API booking failed, using demo mode:', apiErr?.response?.data?.message || apiErr.message);
-                // Demo mode: store everything locally, confirmation page reads from sessionStorage
-                const demoBooking = {
-                    bookingId: 'BK' + Date.now(),
-                    pnr: 'AG' + Math.floor(Math.random() * 90000 + 10000),
-                    status: 'Confirmed',
-                    flightDetails: {
-                        airline: flight.airline || flight.airlineName || 'Airline',
-                        flightNumber: flight.flightNumber,
-                        departureAirport: flight.from,
-                        arrivalAirport: flight.to,
-                        departureTime: flight.departureTime,
-                        arrivalTime: flight.arrivalTime,
-                    },
-                    passengers: payload.passengers,
-                    contactDetails: payload.contactDetails,
-                    fareDetails: { ...payload.fareDetails, totalAmount: total },
-                    totalAmount: total,
-                    _isDemo: true,
-                };
-                sessionStorage.setItem('lastBooking', JSON.stringify(demoBooking));
-                message.success('Booking confirmed! (Demo mode)');
-                navigate(`/flight-confirmation/${demoBooking.bookingId}`);
+                console.error('Booking/Payment failed:', apiErr);
+                message.error(apiErr?.response?.data?.message || apiErr.message || 'Payment failed. Please try again.');
             }
         } catch (err) {
             console.error('Payment error:', err);
@@ -655,107 +599,6 @@ const FlightBookingFlow = () => {
         );
     };
 
-    const renderSeats = () => {
-        const rows = [...new Set(seats.map(s => s.row))].sort((a, b) => a - b);
-        return (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <Card>
-                    <CardHeader icon={Armchair} title="Choose Your Seats" color="bg-teal-700" />
-                    <div className="p-8">
-                        {/* Legend */}
-                        <div className="flex flex-wrap gap-4 mb-8">
-                            {[
-                                { color: 'bg-gray-100 border-gray-200', label: 'Available' },
-                                { color: 'bg-red-100 border-red-200 text-red-400', label: 'Booked' },
-                                { color: 'bg-amber-100 border-amber-300', label: 'Extra Legroom' },
-                                { color: 'bg-[#003580] border-[#003580]', label: 'Premium', textWhite: true },
-                                { color: 'bg-emerald-500 border-emerald-500', label: 'Selected', textWhite: true },
-                            ].map(l => (
-                                <div key={l.label} className="flex items-center gap-2">
-                                    <div className={`w-7 h-7 rounded-lg border-2 ${l.color} ${l.textWhite ? '' : ''}`} />
-                                    <span className="text-[10px] font-black uppercase text-gray-500">{l.label}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Passenger assignment */}
-                        <div className="flex flex-wrap gap-3 mb-8">
-                            {travellers.map((t, i) => {
-                                const seat = selectedSeats.find(s => s.passengerId === t.id);
-                                return (
-                                    <button key={t.id} onClick={() => setActivePassengerIdx(i)}
-                                        className={`px-4 py-2 rounded-xl border-2 text-[11px] font-black uppercase transition-all ${activePassengerIdx === i ? 'border-[#003580] bg-[#003580] text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                                        {t.firstName || `Pax ${i + 1}`} {seat ? `· ${seat.seatNumber}` : '· Pick seat'}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* Seat grid */}
-                        <div className="overflow-x-auto">
-                            <div className="min-w-[400px]">
-                                {/* Column header */}
-                                <div className="flex items-center gap-2 mb-3 pl-12">
-                                    {['A', 'B', 'C', '', 'D', 'E', 'F'].map((col, i) => (
-                                        <div key={i} className={`${col ? 'w-9 text-center' : 'w-6'} text-[10px] font-black text-gray-400 uppercase`}>{col}</div>
-                                    ))}
-                                </div>
-                                <div className="space-y-1 max-h-[420px] overflow-y-auto pr-2">
-                                    {rows.map(row => {
-                                        const rowSeats = seats.filter(s => s.row === row);
-                                        return (
-                                            <div key={row} className="flex items-center gap-2">
-                                                <span className="w-10 text-[10px] font-black text-gray-300 text-right flex-shrink-0">{row}</span>
-                                                {['A', 'B', 'C'].map(col => {
-                                                    const seat = rowSeats.find(s => s.col === col);
-                                                    if (!seat) return <div key={col} className="w-9 h-9" />;
-                                                    const isSelected = selectedSeats.some(s => s.seatNumber === seat.seatNumber);
-                                                    const seatColor = seat.booked ? 'bg-red-100 border-red-200 text-red-300 cursor-not-allowed'
-                                                        : isSelected ? 'bg-emerald-500 border-emerald-500 text-white cursor-pointer'
-                                                        : seat.type === 'premium' ? 'bg-[#003580]/10 border-[#003580]/30 text-[#003580] cursor-pointer hover:bg-[#003580]/20'
-                                                        : seat.type === 'legroom' ? 'bg-amber-50 border-amber-200 text-amber-600 cursor-pointer hover:bg-amber-100'
-                                                        : 'bg-gray-50 border-gray-200 text-gray-500 cursor-pointer hover:bg-gray-100';
-                                                    return (
-                                                        <div key={col} onClick={() => handleSeatClick(seat)}
-                                                            className={`w-9 h-9 rounded-lg border-2 flex items-center justify-center text-[9px] font-black transition-all ${seatColor}`}>
-                                                            {isSelected ? <Check className="w-3 h-3" /> : col}
-                                                        </div>
-                                                    );
-                                                })}
-                                                <div className="w-6" />
-                                                {['D', 'E', 'F'].map(col => {
-                                                    const seat = rowSeats.find(s => s.col === col);
-                                                    if (!seat) return <div key={col} className="w-9 h-9" />;
-                                                    const isSelected = selectedSeats.some(s => s.seatNumber === seat.seatNumber);
-                                                    const seatColor = seat.booked ? 'bg-red-100 border-red-200 text-red-300 cursor-not-allowed'
-                                                        : isSelected ? 'bg-emerald-500 border-emerald-500 text-white cursor-pointer'
-                                                        : seat.type === 'premium' ? 'bg-[#003580]/10 border-[#003580]/30 text-[#003580] cursor-pointer hover:bg-[#003580]/20'
-                                                        : seat.type === 'legroom' ? 'bg-amber-50 border-amber-200 text-amber-600 cursor-pointer hover:bg-amber-100'
-                                                        : 'bg-gray-50 border-gray-200 text-gray-500 cursor-pointer hover:bg-gray-100';
-                                                    return (
-                                                        <div key={col} onClick={() => handleSeatClick(seat)}
-                                                            className={`w-9 h-9 rounded-lg border-2 flex items-center justify-center text-[9px] font-black transition-all ${seatColor}`}>
-                                                            {isSelected ? <Check className="w-3 h-3" /> : col}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </Card>
-                <div className="flex gap-4">
-                    <button onClick={handleBack} className="flex-1 py-5 bg-white border-2 border-gray-100 text-gray-800 rounded-[24px] font-black uppercase tracking-widest text-sm transition-all">Back</button>
-                    <button onClick={handleNext} className="flex-[2] py-5 bg-[#f26a36] text-white rounded-[24px] font-black text-lg uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-orange-100">
-                        Continue to Payment <ArrowRight className="w-5 h-5" />
-                    </button>
-                </div>
-            </div>
-        );
-    };
 
     const renderPayment = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -866,7 +709,13 @@ const FlightBookingFlow = () => {
                         {step === 1 && renderReview()}
                         {step === 2 && renderTravellers()}
                         {step === 3 && renderAddons()}
-                        {step === 4 && renderSeats()}
+                        {step === 4 && <FlightSeatSelection 
+                            flight={flight} 
+                            passengers={travellers} 
+                            selectedSeats={selectedSeats} 
+                            setSelectedSeats={setSelectedSeats} 
+                            onNext={handleNext} 
+                        />}
                         {step === 5 && renderPayment()}
                     </div>
 

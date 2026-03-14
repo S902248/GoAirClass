@@ -16,7 +16,8 @@ const formatDateToYYYYMMDD = (dateStr) => {
     return dateStr;
 };
 
-const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, isLoggedIn, triggerLogin }) => {
+const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, isLoggedIn, triggerLogin, userLocation }) => {
+    const prevBusIdRef = React.useRef(null);
     const [currentStep, setCurrentStep] = useState(1); // 1: Select seats, 2: Board/Drop point, 3: Passenger Info
     const [selectedSeats, setSelectedSeats] = useState([]);
     const [selectedBoarding, setSelectedBoarding] = useState(null);
@@ -36,10 +37,19 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
     // Reset state and fetch booked seats when overlay opens or bus changes
     React.useEffect(() => {
         if (isOpen && bus) {
-            setSelectedSeats([]);
-            setSelectedBoarding(null);
-            setSelectedDropping(null);
-            setCurrentStep(1);
+            const currentBusId = bus.id || bus._id;
+            
+            // Only reset these if the actual bus changed, not if just coordinates/distances updated
+            if (prevBusIdRef.current !== currentBusId) {
+                console.log(">>> [FRONTEND] Bus ID changed or first open, resetting state");
+                setSelectedSeats([]);
+                setCurrentStep(1);
+                setSelectedBoarding(null);
+                setSelectedDropping(null);
+                prevBusIdRef.current = currentBusId;
+            } else {
+                console.log(">>> [FRONTEND] Bus data updated (sync), preserving state");
+            }
 
             const fetchBookedSeats = async () => {
                 try {
@@ -65,6 +75,21 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                 }
             };
             fetchBookedSeats();
+
+            // Auto-select nearest boarding point if available and none selected yet
+            if (bus.boardingPoints && bus.boardingPoints.length > 0 && !selectedBoarding) {
+                const pointsWithDistance = bus.boardingPoints.filter(p => p.distance !== null);
+                console.log(">>> [FRONTEND] Points with distance:", pointsWithDistance.length);
+                if (pointsWithDistance.length > 0) {
+                    const nearest = pointsWithDistance.reduce((prev, curr) =>
+                        parseFloat(curr.distance) < parseFloat(prev.distance) ? curr : prev
+                    );
+                    console.log(">>> [FRONTEND] Auto-selecting nearest:", nearest.location);
+                    setSelectedBoarding(nearest);
+                } else {
+                    setSelectedBoarding(bus.boardingPoints[0]);
+                }
+            }
         }
     }, [isOpen, bus, searchParams?.date]);
 
@@ -459,12 +484,7 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                                 <div className="space-y-4">
                                                     <h4 className="text-xl font-black text-gray-800 tracking-tight uppercase">Boarding Points</h4>
                                                     <div className="grid grid-cols-1 gap-3">
-                                                        {(bus.boardingPoints || [
-                                                            { time: '23:50', location: 'Shewalewadi Parking No 1', address: 'Main Entrance' },
-                                                            { time: '20:30', location: 'Bhosari Parking Near Pratik Travels', address: 'Bhosari' },
-                                                            { time: '20:40', location: 'Bhosari Near Landewadi Petrol Pump', address: 'Landewadi' },
-                                                            { time: '20:55', location: 'Sambhaji Nagar Near Vaishali Hotel', address: 'Sambhaji Nagar' }
-                                                        ]).map((point, i) => (
+                                                        {(bus.boardingPoints || []).map((point, i) => (
                                                             <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
                                                                 <div className="flex items-start gap-4">
                                                                     <MapPin className="h-4 w-4 text-gray-400 mt-1" />
@@ -484,13 +504,7 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                                 <div className="space-y-4">
                                                     <h4 className="text-xl font-black text-gray-800 tracking-tight uppercase">Dropping Points</h4>
                                                     <div className="grid grid-cols-1 gap-3">
-                                                        {(bus.droppingPoints || [
-                                                            { time: '07:10', location: 'Rajiv Gandhi Chowk', address: 'Central' },
-                                                            { time: '07:11', location: 'Adarsh Colony Latur', address: 'Adarsh Colony' },
-                                                            { time: '07:13', location: 'Nandi Stop', address: 'Nandi' },
-                                                            { time: '07:15', location: 'Chatrapati Shivaji Maharaj Chowk', address: 'Shivaji Chowk' },
-                                                            { time: '07:20', location: 'Gandhi Chowk Near Old Bus Stand', address: 'Old Bus Stand' }
-                                                        ]).map((point, i) => (
+                                                        {(bus.droppingPoints || []).map((point, i) => (
                                                             <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
                                                                 <div className="flex items-start gap-4">
                                                                     <MapPin className="h-4 w-4 text-gray-400 mt-1" />
@@ -612,38 +626,107 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     {/* Boarding Points Card */}
                                     <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">
-                                        <h4 className="text-xl font-black text-gray-800 tracking-tight mb-6 uppercase">Boarding Points</h4>
-                                        <div className="space-y-4">
-                                            {(bus.boardingPoints || [
-                                                { time: '23:50', location: 'Shewalewadi Parking No 1', address: 'Main Entrance' },
-                                                { time: '20:30', location: 'Bhosari Parking Near Pratik Travels', address: 'Bhosari' },
-                                                { time: '20:40', location: 'Bhosari Near Landewadi Petrol Pump', address: 'Landewadi' },
-                                                { time: '20:55', location: 'Sambhaji Nagar Near Vaishali Hotel', address: 'Sambhaji Nagar' }
-                                            ]).map((point, i) => (
-                                                <label
-                                                    key={i}
-                                                    className={`flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition-all hover:bg-red-50/30
-                                                    ${(selectedBoarding && selectedBoarding.location === point.location) ? 'bg-red-50 border-[#D84E55]' : 'bg-gray-50 border-gray-100'}`}
-                                                >
-                                                    <input
-                                                        type="radio"
-                                                        name="boarding"
-                                                        className="mt-1 accent-[#D84E55]"
-                                                        checked={selectedBoarding && selectedBoarding.location === point.location}
-                                                        onChange={() => {
-                                                            setSelectedBoarding(point);
-                                                            toast.success(`Boarding: ${point.location} selected`, { autoClose: 1000 });
-                                                        }}
-                                                    />
-                                                    <div className="flex-1">
-                                                        <div className="flex justify-between items-center">
-                                                            <p className="text-sm font-black text-gray-800 uppercase tracking-tight">{point.location}</p>
-                                                            <span className="text-xs font-black text-[#D84E55]">{point.time}</span>
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h4 className="text-xl font-black text-gray-800 tracking-tight uppercase">Boarding Points</h4>
+                                            {(() => {
+                                                const points = (bus.boardingPoints || []).filter(p => p.distance !== null);
+                                                const nearest = points.length > 0 ? points.reduce((prev, curr) => 
+                                                    parseFloat(curr.distance) < parseFloat(prev.distance) ? curr : prev
+                                                ) : null;
+                                                
+                                                if (nearest) {
+                                                    return (
+                                                        <div className="bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl flex items-center gap-2 animate-bounce-subtle">
+                                                            <span className="text-lg">⭐</span>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Nearest Found</span>
+                                                                <span className="text-[11px] font-bold text-emerald-600">{nearest.location}</span>
+                                                            </div>
                                                         </div>
-                                                        <p className="text-[10px] font-bold text-gray-400 uppercase mt-0.5">{point.address || 'Near main bus stop'}</p>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
+                                        <div className="space-y-4">
+                                            {(() => {
+                                                const points = (bus.boardingPoints || []).filter(p => p.distance !== null);
+                                                const minDistance = points.length > 0 ? Math.min(...points.map(p => parseFloat(p.distance))) : null;
+                                                const sorted = [...(bus.boardingPoints || [])].sort((a, b) => {
+                                                    if (a.distance === null) return 1;
+                                                    if (b.distance === null) return -1;
+                                                    return parseFloat(a.distance) - parseFloat(b.distance);
+                                                });
+                                                
+                                                const nearest = sorted.find(p => p.distance !== null && parseFloat(p.distance) === minDistance);
+                                                const others = sorted.filter(p => p !== nearest);
+
+                                                return (
+                                                    <div className="space-y-6">
+                                                        {nearest && (
+                                                            <div className="space-y-3">
+                                                                <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest px-1">⭐ Nearest Boarding Point</p>
+                                                                <label
+                                                                    className={`flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition-all hover:bg-red-50/30
+                                                                    ${(selectedBoarding && selectedBoarding.location === nearest.location) ? 'bg-red-50 border-[#D84E55]' : 'bg-gray-50 border-gray-100'}
+                                                                    ring-2 ring-red-200 ring-offset-2`}
+                                                                >
+                                                                    <input
+                                                                        type="radio"
+                                                                        name="boarding"
+                                                                        className="mt-1 accent-[#D84E55]"
+                                                                        checked={selectedBoarding && selectedBoarding.location === nearest.location}
+                                                                        onChange={() => setSelectedBoarding(nearest)}
+                                                                    />
+                                                                    <div className="flex-1">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <p className="text-sm font-black text-gray-800 uppercase tracking-tight">{nearest.location}</p>
+                                                                            <div className="flex flex-col items-end">
+                                                                                <span className="text-xs font-black text-[#D84E55]">{nearest.time}</span>
+                                                                                <span className="text-[9px] font-bold text-gray-400 mt-0.5">{nearest.distance} km away</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <p className="text-[10px] font-bold text-gray-400 uppercase mt-0.5">{nearest.address || 'Near main station'}</p>
+                                                                    </div>
+                                                                </label>
+                                                            </div>
+                                                        )}
+
+                                                        {others.length > 0 && (
+                                                            <div className="space-y-3">
+                                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Other options:</p>
+                                                                <div className="space-y-3">
+                                                                    {others.map((point, i) => (
+                                                                        <label
+                                                                            key={i}
+                                                                            className={`flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition-all hover:bg-red-50/30
+                                                                            ${(selectedBoarding && selectedBoarding.location === point.location) ? 'bg-red-50 border-[#D84E55]' : 'bg-gray-50 border-gray-100'}`}
+                                                                        >
+                                                                            <input
+                                                                                type="radio"
+                                                                                name="boarding"
+                                                                                className="mt-1 accent-[#D84E55]"
+                                                                                checked={selectedBoarding && selectedBoarding.location === point.location}
+                                                                                onChange={() => setSelectedBoarding(point)}
+                                                                            />
+                                                                            <div className="flex-1">
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <p className="text-sm font-black text-gray-800 uppercase tracking-tight">{point.location}</p>
+                                                                                    <div className="flex flex-col items-end">
+                                                                                        <span className="text-xs font-black text-[#D84E55]">{point.time}</span>
+                                                                                        {point.distance && <span className="text-[9px] font-bold text-gray-400 mt-0.5">{point.distance} km away</span>}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <p className="text-[10px] font-bold text-gray-400 uppercase mt-0.5">{point.address || 'Standard stop'}</p>
+                                                                            </div>
+                                                                        </label>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                </label>
-                                            ))}
+                                                );
+                                            })()}
                                         </div>
                                     </div>
 
@@ -651,13 +734,7 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                     <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">
                                         <h4 className="text-xl font-black text-gray-800 tracking-tight mb-6 uppercase">Dropping Points</h4>
                                         <div className="space-y-4">
-                                            {(bus.droppingPoints || [
-                                                { time: '07:10', location: 'Rajiv Gandhi Chowk', address: 'Central' },
-                                                { time: '07:11', location: 'Adarsh Colony Latur', address: 'Adarsh Colony' },
-                                                { time: '07:13', location: 'Nandi Stop', address: 'Nandi' },
-                                                { time: '07:15', location: 'Chatrapati Shivaji Maharaj Chowk', address: 'Shivaji Chowk' },
-                                                { time: '07:20', location: 'Gandhi Chowk Near Old Bus Stand', address: 'Old Bus Stand' }
-                                            ]).map((point, i) => (
+                                            {(bus.droppingPoints || []).map((point, i) => (
                                                 <label
                                                     key={i}
                                                     className={`flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition-all hover:bg-blue-50/30
@@ -676,7 +753,10 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                                     <div className="flex-1">
                                                         <div className="flex justify-between items-center">
                                                             <p className="text-sm font-black text-gray-800 uppercase tracking-tight">{point.location}</p>
-                                                            <span className="text-xs font-black text-blue-500">{point.time}</span>
+                                                            <div className="flex flex-col items-end">
+                                                                <span className="text-xs font-black text-blue-500">{point.time}</span>
+                                                                {point.distance && <span className="text-[9px] font-bold text-gray-400 mt-0.5">{point.distance} km away</span>}
+                                                            </div>
                                                         </div>
                                                         <p className="text-[10px] font-bold text-gray-400 uppercase mt-0.5">{point.address || 'Central drop point'}</p>
                                                     </div>

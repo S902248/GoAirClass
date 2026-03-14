@@ -82,22 +82,34 @@ const HotelDetails = ({ setView }) => {
 
         const existingScript = document.getElementById(scriptId);
 
+        const checkAndSetLoaded = () => {
+            // Wait until the Map constructor is actually available
+            if (window.google?.maps?.Map) {
+                setMapLoaded(true);
+            } else {
+                // If script loaded but Map isn't ready yet, poll briefly
+                const interval = setInterval(() => {
+                    if (window.google?.maps?.Map) {
+                        setMapLoaded(true);
+                        clearInterval(interval);
+                    }
+                }, 100);
+                // Safety timeout
+                setTimeout(() => clearInterval(interval), 5000);
+            }
+        };
+
         if (!existingScript) {
             const script = document.createElement("script");
             script.id = scriptId;
             script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker&loading=async`;
             script.async = true;
             script.defer = true;
-            script.onload = () => setMapLoaded(true);
+            script.onload = checkAndSetLoaded;
             document.head.appendChild(script);
         } else {
             // Script tag exists — check if Google Maps API is already ready
-            if (window.google?.maps?.Map) {
-                setMapLoaded(true);
-            } else {
-                // Script is still loading — attach to its onload
-                existingScript.addEventListener('load', () => setMapLoaded(true));
-            }
+            checkAndSetLoaded();
         }
     }, []);
 
@@ -105,32 +117,36 @@ const HotelDetails = ({ setView }) => {
     useEffect(() => {
         if (mapLoaded && hotel && hotel.latitude && hotel.longitude) {
             const mapContainer = document.getElementById('hotel-map');
-            if (mapContainer) {
-                const position = { lat: parseFloat(hotel.latitude), lng: parseFloat(hotel.longitude) };
-                
-                // Initialize the map
-                const map = new window.google.maps.Map(mapContainer, {
-                    center: position,
-                    zoom: 15,
-                    mapId: 'DEMO_MAP_ID', // AdvancedMarkerElement requires a MapID
-                    disableDefaultUI: false,
-                    scrollwheel: true,
-                });
+            if (mapContainer && window.google?.maps?.Map) {
+                try {
+                    const position = { lat: parseFloat(hotel.latitude), lng: parseFloat(hotel.longitude) };
+                    
+                    // Initialize the map
+                    const map = new window.google.maps.Map(mapContainer, {
+                        center: position,
+                        zoom: 15,
+                        mapId: 'DEMO_MAP_ID', // AdvancedMarkerElement requires a MapID
+                        disableDefaultUI: false,
+                        scrollwheel: true,
+                    });
 
-                // Use the new AdvancedMarkerElement
-                if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
-                    new window.google.maps.marker.AdvancedMarkerElement({
-                        map: map,
-                        position: position,
-                        title: hotel.hotelName,
-                    });
-                } else {
-                    // Fallback to legacy marker if AdvancedMarker is not yet available
-                    new window.google.maps.Marker({
-                        position: position,
-                        map: map,
-                        title: hotel.hotelName,
-                    });
+                    // Use the new AdvancedMarkerElement
+                    if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
+                        new window.google.maps.marker.AdvancedMarkerElement({
+                            map: map,
+                            position: position,
+                            title: hotel.hotelName,
+                        });
+                    } else if (window.google.maps.Marker) {
+                        // Fallback to legacy marker if AdvancedMarker is not yet available
+                        new window.google.maps.Marker({
+                            position: position,
+                            map: map,
+                            title: hotel.hotelName,
+                        });
+                    }
+                } catch (error) {
+                    console.error("Error initializing Google Map:", error);
                 }
             }
         }

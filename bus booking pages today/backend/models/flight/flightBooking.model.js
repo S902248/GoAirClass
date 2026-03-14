@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { generatePNR, generateTicketNumber } = require('../../utils/flightIdentifiers');
 
 const flightBookingSchema = new mongoose.Schema({
     userId: {
@@ -135,6 +136,16 @@ flightBookingSchema.pre('validate', async function () {
     // 3. Calculate Total Amount
     const { baseFare = 0, taxes = 0, seatFee = 0, addons = 0, discount = 0 } = this.fareDetails || {};
     this.fareDetails.totalAmount = (baseFare + taxes + seatFee + addons) - discount;
+
+    // 4. Generate PNR if missing
+    if (!this.pnr) {
+        this.pnr = generatePNR();
+    }
+
+    // 5. Generate Ticket Number if missing
+    if (!this.ticketNumber) {
+        this.ticketNumber = generateTicketNumber();
+    }
 });
 
 module.exports = mongoose.model('FlightBooking', flightBookingSchema);

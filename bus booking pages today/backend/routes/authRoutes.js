@@ -10,9 +10,10 @@ router.post('/verify-otp', verifyOtp);
 router.post('/admin-login', adminLogin);
 
 // --- New: Registration-Check-First OTP Login ---
-router.post('/login', loginWithOtp);         // POST /api/auth/login
-router.post('/resend-login-otp', resendOtp); // Adding for consistency
-router.post('/verify-login-otp', verifyLoginOtp); // POST /api/auth/verify-login-otp
+router.post('/login', loginWithOtp);
+router.post('/send-otp', getOtp);   // Re-adding for user requirement
+router.post('/resend-otp', resendOtp);
+router.post('/verify-login-otp', verifyLoginOtp);
 
 // Protected Admin Routes
 router.get('/dashboard-stats', authMiddleware, checkRole(['admin', 'superadmin']), getDashboardStats);

@@ -19,6 +19,24 @@ const flightSchema = new mongoose.Schema({
     isRefundable: { type: Boolean, default: true },
     aircraftType: { type: String, default: 'Airbus A320' },
     stops: { type: String, default: 'Non-Stop' },
+    
+    // Add schedule reference
+    scheduleId: { type: mongoose.Schema.Types.ObjectId, ref: 'FlightSchedule' },
+    
+    // Enhanced configuration
+    configuration: {
+        economy: {
+            totalSeats: { type: Number, default: 150 },
+            availableSeats: { type: Number, default: 150 },
+            price: { type: Number, default: 0 }
+        },
+        business: {
+            totalSeats: { type: Number, default: 0 },
+            availableSeats: { type: Number, default: 0 },
+            price: { type: Number, default: 0 }
+        }
+    },
+
     status: {
         type: String,
         enum: ['Scheduled', 'Delayed', 'Cancelled', 'Completed'],

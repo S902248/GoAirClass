@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { MapPin, Calendar, ArrowRightLeft, Users, ChevronDown } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { DatePicker } from 'antd';
+import dayjs from 'dayjs';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const SearchWidget = ({ setSearchParams }) => {
     const location = useLocation();
@@ -8,9 +12,13 @@ const SearchWidget = ({ setSearchParams }) => {
 
     const [fromCity, setFromCity] = useState('Pune');
     const [toCity, setToCity] = useState('Mumbai');
-    const [date, setDate] = useState('20-02-2026');
+    const [date, setDate] = useState(dayjs().format('DD-MM-YYYY'));
 
     const handleSearch = () => {
+        if (!fromCity || !toCity) {
+            toast.error("Add first from to", { position: "top-right", theme: "colored" });
+            return;
+        }
         if (setSearchParams) {
             setSearchParams({ fromCity, toCity, date });
         }
@@ -72,16 +80,21 @@ const SearchWidget = ({ setSearchParams }) => {
                 </div>
 
                 {/* Date of Journey */}
-                <div className="flex lg:w-[25%] border-r border-[#e5e7eb] bg-white">
+                <div className="flex lg:w-[25%] border-r border-[#e5e7eb] bg-white group">
                     <div className="flex items-center px-4 py-3 cursor-pointer hover:bg-gray-50 flex-1 border-r border-gray-200">
                         <Calendar className="h-5 w-5 text-gray-400 mr-2 shrink-0" />
-                        <div className="flex flex-col">
+                        <div className="flex flex-col flex-1">
                             <span className="text-[10px] text-gray-500 mb-0.5">Date of Journey</span>
-                            <input
-                                type="text"
-                                value={date}
-                                onChange={(e) => setDate(e.target.value)}
-                                className="bg-transparent border-none outline-none text-[13px] font-semibold text-gray-700 w-full"
+                            <DatePicker
+                                value={date ? dayjs(date, 'DD-MM-YYYY') : null}
+                                onChange={(val) => setDate(val ? val.format('DD-MM-YYYY') : '')}
+                                format="DD-MM-YYYY"
+                                variant="borderless"
+                                className="p-0 font-semibold text-gray-700 h-5"
+                                popupClassName="airline-calendar-popup"
+                                placeholder="Select Date"
+                                inputReadOnly
+                                allowClear={false}
                             />
                         </div>
                     </div>
@@ -105,6 +118,7 @@ const SearchWidget = ({ setSearchParams }) => {
                     SEARCH
                 </button>
             </div>
+            <ToastContainer />
         </div>
     );
 };

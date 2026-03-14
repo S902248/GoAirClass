@@ -23,29 +23,32 @@ const FlightBookingConfirmation = () => {
 
     useEffect(() => {
         const fetchBooking = async () => {
-            // 1. Always check sessionStorage first (set right before navigation)
+            // 1. Try to fetch from API first (real confirmed booking)
+            try {
+                const res = await axios.get(`/flight-bookings/${bookingId}`);
+                if (res.data.success) {
+                    setBooking(res.data.booking);
+                    setLoading(false);
+                    // Clear the session storage after successful load to avoid stale data
+                    sessionStorage.removeItem('lastBooking');
+                    return;
+                }
+            } catch (err) {
+                console.log("Not found in API yet, checking cache...");
+            }
+
+            // 2. Fallback: check sessionStorage (local record of pending/demo booking)
             const cached = sessionStorage.getItem('lastBooking');
             if (cached) {
                 const parsed = JSON.parse(cached);
-                // Match bookingId in case user navigates back to old confirmation
-                if (!parsed.bookingId || parsed.bookingId === bookingId || parsed._isDemo) {
+                if (parsed.bookingId === bookingId) {
                     setBooking(parsed);
                     setLoading(false);
                     return;
                 }
             }
 
-            // 2. Fallback: fetch from API (real confirmed bookings)
-            try {
-                const res = await axios.get(`/flight-bookings/${bookingId}`);
-                if (res.data.success) {
-                    setBooking(res.data.booking);
-                }
-            } catch (err) {
-                console.error("Failed to fetch booking", err);
-            } finally {
-                setLoading(false);
-            }
+            setLoading(false);
         };
         fetchBooking();
     }, [bookingId]);

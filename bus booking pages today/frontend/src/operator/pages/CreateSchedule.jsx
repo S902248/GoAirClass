@@ -4,6 +4,23 @@ import { Clock, Calendar, Bus, MapPin, ArrowLeft, Save, IndianRupee, Info, Plus,
 import { getOperatorBuses } from '../../api/busApi';
 import { getAllRoutes } from '../../api/routeApi';
 import { createSchedule } from '../../api/scheduleApi';
+import LocationInput from '../../components/LocationInput';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default leaflet marker icons
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 const CreateSchedule = () => {
     const navigate = useNavigate();
@@ -18,8 +35,8 @@ const CreateSchedule = () => {
         departureTime: '',
         arrivalTime: '',
         ticketPrice: '',
-        boardingPoints: [{ location: '', time: '' }],
-        droppingPoints: [{ location: '', time: '' }]
+        boardingPoints: [{ location: '', time: '', lat: null, lng: null }],
+        droppingPoints: [{ location: '', time: '', lat: null, lng: null }]
     });
 
     useEffect(() => {
@@ -41,7 +58,7 @@ const CreateSchedule = () => {
     const handleAddPoint = (type) => {
         setFormData(prev => ({
             ...prev,
-            [type]: [...prev[type], { location: '', time: '' }]
+            [type]: [...prev[type], { location: '', time: '', lat: null, lng: null }]
         }));
     };
 
@@ -55,7 +72,12 @@ const CreateSchedule = () => {
 
     const handlePointChange = (type, index, field, value) => {
         const updatedPoints = [...formData[type]];
-        updatedPoints[index][field] = value;
+        if (typeof value === 'object' && value !== null) {
+            // Bulk update for LocationInput (location, lat, lng)
+            updatedPoints[index] = { ...updatedPoints[index], ...value };
+        } else {
+            updatedPoints[index][field] = value;
+        }
         setFormData(prev => ({
             ...prev,
             [type]: updatedPoints
@@ -258,38 +280,53 @@ const CreateSchedule = () => {
 
                             <div className="space-y-4">
                                 {formData.boardingPoints.map((point, index) => (
-                                    <div key={index} className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end animate-in fade-in slide-in-from-left-2 duration-300">
-                                        <div className="md:col-span-4">
-                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block px-1">Location</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                placeholder="e.g. Pune Station"
-                                                value={point.location}
-                                                onChange={(e) => handlePointChange('boardingPoints', index, 'location', e.target.value)}
-                                                className="w-full bg-gray-50 border-none rounded-xl py-4 px-6 text-xs font-bold focus:ring-4 focus:ring-purple-50 outline-none"
-                                            />
+                                    <div key={index} className="space-y-4 p-6 bg-gray-50/50 rounded-[2rem] border border-gray-100 animate-in fade-in slide-in-from-left-2 duration-300">
+                                        <div className="grid grid-cols-1 md:grid-cols-7 gap-6 items-end">
+                                            <div className="md:col-span-4">
+                                                <LocationInput
+                                                    label="Boarding Location"
+                                                    value={point.location}
+                                                    onChange={(val) => handlePointChange('boardingPoints', index, null, val)}
+                                                    placeholder="Search boarding point..."
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block px-1">Time</label>
+                                                <input
+                                                    type="time"
+                                                    required
+                                                    value={point.time}
+                                                    onChange={(e) => handlePointChange('boardingPoints', index, 'time', e.target.value)}
+                                                    className="w-full bg-white border-none rounded-xl py-4 px-6 text-xs font-bold focus:ring-4 focus:ring-purple-50 outline-none"
+                                                />
+                                            </div>
+                                            <div className="flex justify-end">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemovePoint('boardingPoints', index)}
+                                                    disabled={formData.boardingPoints.length <= 1}
+                                                    className="p-4 bg-red-50 text-red-500 rounded-xl hover:bg-[#d84e55] hover:text-white transition-all disabled:opacity-30"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="md:col-span-2">
-                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block px-1">Time</label>
-                                            <input
-                                                type="time"
-                                                required
-                                                value={point.time}
-                                                onChange={(e) => handlePointChange('boardingPoints', index, 'time', e.target.value)}
-                                                className="w-full bg-gray-50 border-none rounded-xl py-4 px-6 text-xs font-bold focus:ring-4 focus:ring-purple-50 outline-none"
-                                            />
-                                        </div>
-                                        <div className="flex justify-end">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemovePoint('boardingPoints', index)}
-                                                disabled={formData.boardingPoints.length <= 1}
-                                                className="p-4 bg-red-50 text-red-500 rounded-xl hover:bg-[#d84e55] hover:text-white transition-all disabled:opacity-30"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        </div>
+                                        
+                                        {point.lat && point.lng && (
+                                            <div className="h-40 rounded-2xl overflow-hidden border border-gray-200 shadow-inner">
+                                                <MapContainer 
+                                                    center={[point.lat, point.lng]} 
+                                                    zoom={15} 
+                                                    style={{ height: '100%', width: '100%' }}
+                                                    zoomControl={false}
+                                                >
+                                                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                                    <Marker position={[point.lat, point.lng]}>
+                                                        <Popup>{point.location}</Popup>
+                                                    </Marker>
+                                                </MapContainer>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -318,38 +355,53 @@ const CreateSchedule = () => {
 
                             <div className="space-y-4">
                                 {formData.droppingPoints.map((point, index) => (
-                                    <div key={index} className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end animate-in fade-in slide-in-from-left-2 duration-300">
-                                        <div className="md:col-span-4">
-                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block px-1">Location</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                placeholder="e.g. Vashi Plaza"
-                                                value={point.location}
-                                                onChange={(e) => handlePointChange('droppingPoints', index, 'location', e.target.value)}
-                                                className="w-full bg-gray-50 border-none rounded-xl py-4 px-6 text-xs font-bold focus:ring-4 focus:ring-emerald-50 outline-none"
-                                            />
+                                    <div key={index} className="space-y-4 p-6 bg-gray-50/50 rounded-[2rem] border border-gray-100 animate-in fade-in slide-in-from-left-2 duration-300">
+                                        <div className="grid grid-cols-1 md:grid-cols-7 gap-6 items-end">
+                                            <div className="md:col-span-4">
+                                                <LocationInput
+                                                    label="Dropping Location"
+                                                    value={point.location}
+                                                    onChange={(val) => handlePointChange('droppingPoints', index, null, val)}
+                                                    placeholder="Search drop point..."
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block px-1">Time</label>
+                                                <input
+                                                    type="time"
+                                                    required
+                                                    value={point.time}
+                                                    onChange={(e) => handlePointChange('droppingPoints', index, 'time', e.target.value)}
+                                                    className="w-full bg-white border-none rounded-xl py-4 px-6 text-xs font-bold focus:ring-4 focus:ring-emerald-50 outline-none"
+                                                />
+                                            </div>
+                                            <div className="flex justify-end">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemovePoint('droppingPoints', index)}
+                                                    disabled={formData.droppingPoints.length <= 1}
+                                                    className="p-4 bg-red-50 text-red-500 rounded-xl hover:bg-[#d84e55] hover:text-white transition-all disabled:opacity-30"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="md:col-span-2">
-                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block px-1">Time</label>
-                                            <input
-                                                type="time"
-                                                required
-                                                value={point.time}
-                                                onChange={(e) => handlePointChange('droppingPoints', index, 'time', e.target.value)}
-                                                className="w-full bg-gray-50 border-none rounded-xl py-4 px-6 text-xs font-bold focus:ring-4 focus:ring-emerald-50 outline-none"
-                                            />
-                                        </div>
-                                        <div className="flex justify-end">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemovePoint('droppingPoints', index)}
-                                                disabled={formData.droppingPoints.length <= 1}
-                                                className="p-4 bg-red-50 text-red-500 rounded-xl hover:bg-[#d84e55] hover:text-white transition-all disabled:opacity-30"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        </div>
+
+                                        {point.lat && point.lng && (
+                                            <div className="h-40 rounded-2xl overflow-hidden border border-gray-200 shadow-inner">
+                                                <MapContainer 
+                                                    center={[point.lat, point.lng]} 
+                                                    zoom={15} 
+                                                    style={{ height: '100%', width: '100%' }}
+                                                    zoomControl={false}
+                                                >
+                                                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                                    <Marker position={[point.lat, point.lng]}>
+                                                        <Popup>{point.location}</Popup>
+                                                    </Marker>
+                                                </MapContainer>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Armchair, Check, Info, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Armchair, Check, Info, ShieldCheck, AlertCircle, ChevronRight } from 'lucide-react';
 import axios from '../api/Axios';
 
 const FlightSeatSelection = ({ flight, passengers, selectedSeats, setSelectedSeats, onNext }) => {
@@ -71,127 +71,177 @@ const FlightSeatSelection = ({ flight, passengers, selectedSeats, setSelectedSea
     const renderSeat = (row, col) => {
         const seatNumber = `${row}${col}`;
         const seat = seats.find(s => s.seatNumber === seatNumber);
-        if (!seat) return <div key={col} className="w-8 h-8 md:w-10 md:h-10 invisible" />;
+        if (!seat) return <div key={col} className="w-10 h-10 md:w-12 md:h-12 invisible" />;
 
         const isSelected = selectedSeats.some(s => s.seatNumber === seatNumber);
         const isOccupied = seat.isBooked || (seat.isLocked && !isSelected);
 
-        let bgColor = "bg-white border-2 border-slate-200 hover:border-blue-400";
-        if (isOccupied) bgColor = "bg-slate-100 border-none cursor-not-allowed";
-        if (isSelected) bgColor = "bg-blue-600 border-blue-600 shadow-lg shadow-blue-100";
-
-        let iconColor = "text-slate-300";
-        if (seat.type === 'Premium') iconColor = isSelected ? "text-white" : "text-amber-400";
-        if (seat.type === 'Standard') iconColor = isSelected ? "text-white" : "text-blue-400";
-        if (seat.type === 'Free') iconColor = isSelected ? "text-white" : "text-emerald-400";
-        if (isOccupied) iconColor = "text-slate-200";
+        // Color Logic per Requirements:
+        // Grey = Available, Red = Booked, Blue = Premium, Yellow = Extra Legroom, Green = Selected
+        let seatColor = "bg-gray-200 text-gray-600 hover:bg-gray-300"; // Grey (Available/Standard/Free)
+        
+        if (seat.type === 'Premium') seatColor = "bg-blue-600 text-white hover:bg-blue-700"; // Blue
+        if (seat.type === 'Extra Legroom') seatColor = "bg-yellow-400 text-gray-800 hover:bg-yellow-500"; // Yellow
+        if (isOccupied) seatColor = "bg-red-500 text-white cursor-not-allowed"; // Red (Booked or Locked)
+        if (isSelected) seatColor = "bg-green-500 text-white"; // Green
 
         return (
             <button
                 key={col}
                 disabled={isOccupied}
                 onClick={() => handleSeatClick(seat)}
-                className={`relative w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center transition-all ${bgColor} group`}
+                className={`relative w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center transition-all duration-300 shadow-sm ${seatColor} group border-b-4 border-black/10`}
             >
-                <Armchair className={`w-5 h-5 md:w-6 md:h-6 ${iconColor}`} />
-                {isSelected && <Check className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-white" />}
+                <span className="text-[10px] md:text-xs font-black tracking-tight z-10">{seatNumber}</span>
+                
+                {/* Visual indicator for selection */}
+                {isSelected && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-md">
+                        <Check className="w-3 h-3 text-green-600" strokeWidth={4} />
+                    </div>
+                )}
 
-                {/* Tooltip */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-slate-900 text-white text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                    {seatNumber} • {seat.type} • ₹{seat.price}
-                </div>
+                {/* Hover Details */}
+                {!isOccupied && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-1.5 bg-slate-900 text-white text-[10px] font-black rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 shadow-xl border border-white/20">
+                        {seat.type} • ₹{seat.price}
+                    </div>
+                )}
             </button>
         );
     };
 
-    if (loading) return <div className="p-20 text-center font-black text-gray-400 uppercase tracking-widest animate-pulse">Scanning Seat Availability...</div>;
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center p-20 space-y-4">
+            <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Configuring Aircraft Layout...</p>
+        </div>
+    );
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="bg-blue-600 px-8 py-5 flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-white">
-                        <Armchair className="w-6 h-6" />
-                        <h2 className="font-black text-lg uppercase tracking-tight">Select Seats</h2>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden">
+                <div className="bg-[#00695c] px-10 py-7 flex items-center justify-between">
+                    <div className="flex items-center gap-4 text-white">
+                        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                            <Armchair className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="font-black text-xl uppercase tracking-tight leading-none">Choose Your Seats</h2>
+                            <p className="text-white/60 text-xs font-bold mt-1 uppercase tracking-widest">Select {passengers.length} spots</p>
+                        </div>
                     </div>
-                    <div className="bg-white/20 px-4 py-1.5 rounded-full text-white text-[10px] font-black uppercase tracking-widest">
-                        {selectedSeats.length} / {passengers.length} Assigned
+                    <div className="bg-white/10 backdrop-blur-lg border border-white/20 px-6 py-2.5 rounded-2xl text-white text-xs font-black uppercase tracking-widest shadow-inner">
+                        {selectedSeats.length} / {passengers.length} Selected
                     </div>
                 </div>
 
-                <div className="p-8">
-                    {/* Current Passenger Indicator */}
-                    <div className="flex items-center gap-4 p-5 bg-blue-50 rounded-2xl mb-8 border border-blue-100">
-                        <div className="w-8 h-8 bg-blue-600 text-white rounded-xl flex items-center justify-center text-xs font-black">
-                            {currentPassengerIdx + 1}
-                        </div>
-                        <p className="text-xs font-bold text-blue-900 uppercase tracking-wide">
-                            Selecting seat for: <span className="font-black underline">{passengers[currentPassengerIdx].firstName} {passengers[currentPassengerIdx].lastName}</span>
-                        </p>
-                    </div>
-
-                    {/* Seat Map Legend */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                <div className="p-10 bg-gradient-to-b from-white to-slate-50/30">
+                    
+                    {/* Legend per Requirements */}
+                    <div className="flex flex-wrap items-center justify-center gap-6 mb-12 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                         {[
-                            { label: 'Premium (₹785)', color: 'bg-amber-400' },
-                            { label: 'Standard (₹390)', color: 'bg-blue-400' },
-                            { label: 'Free (₹0)', color: 'bg-emerald-400' },
-                            { label: 'Occupied', color: 'bg-slate-100' },
+                            { label: 'Available', color: 'bg-gray-200' },
+                            { label: 'Booked', color: 'bg-red-500' },
+                            { label: 'Extra Legroom', color: 'bg-yellow-400' },
+                            { label: 'Premium', color: 'bg-blue-600' },
+                            { label: 'Selected', color: 'bg-green-500' },
                         ].map(l => (
-                            <div key={l.label} className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${l.color}`}></div>
-                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{l.label}</span>
+                            <div key={l.label} className="flex items-center gap-3">
+                                <div className={`w-5 h-5 rounded-md ${l.color} shadow-sm border-b-2 border-black/10`}></div>
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{l.label}</span>
                             </div>
                         ))}
                     </div>
 
-                    {/* Seat Map Layout */}
-                    <div className="bg-slate-50 rounded-[3rem] p-10 md:p-16 border border-slate-100 max-w-lg mx-auto overflow-x-auto">
-                        <div className="flex justify-center mb-12">
-                            <div className="w-full max-w-[280px] h-20 bg-white rounded-t-[100px] border-x-4 border-t-4 border-slate-200 flex flex-col items-center justify-center">
-                                <div className="w-12 h-1 bg-slate-100 rounded-full mb-2"></div>
-                                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Cockpit</span>
+                    {/* Current Passenger Detail */}
+                    <div className="max-w-md mx-auto mb-10">
+                        <div className="bg-blue-600 text-white rounded-2xl p-4 flex items-center gap-4 shadow-lg shadow-blue-200 transform hover:scale-[1.02] transition-transform">
+                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-lg font-black backdrop-blur-md">
+                                {currentPassengerIdx + 1}
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-[10px] font-black uppercase text-blue-100 tracking-widest">Current Selection</p>
+                                <p className="font-black uppercase tracking-tight text-sm">
+                                    {passengers[currentPassengerIdx].firstName} {passengers[currentPassengerIdx].lastName}
+                                </p>
+                            </div>
+                            <Info className="w-5 h-5 text-white/40" />
+                        </div>
+                    </div>
+
+                    {/* Aircraft Body Visualization */}
+                    <div className="max-w-2xl mx-auto">
+                        {/* Cockpit / Nose */}
+                        <div className="flex justify-center mb-0">
+                            <div className="w-[340px] h-32 bg-white rounded-t-[140px] border-x-[12px] border-t-[12px] border-slate-200 relative flex flex-col items-center justify-end pb-4 bg-gradient-to-b from-slate-50 to-white">
+                                <div className="absolute top-10 flex gap-12">
+                                    <div className="w-12 h-6 bg-slate-900/10 rounded-tl-full rounded-tr-md backdrop-blur-sm"></div>
+                                    <div className="w-12 h-6 bg-slate-900/10 rounded-tr-full rounded-tl-md backdrop-blur-sm"></div>
+                                </div>
+                                <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-2">Flight Deck</span>
                             </div>
                         </div>
 
-                        <div className="space-y-4 min-w-[300px]">
-                            {/* Rows */}
-                            {[...Array(30)].map((_, i) => {
-                                const row = i + 1;
-                                return (
-                                    <div key={row} className="flex items-center justify-center gap-2 md:gap-4 relative">
-                                        <div className="absolute -left-8 text-[10px] font-black text-slate-300">{row}</div>
-                                        <div className="flex gap-2">
-                                            {['A', 'B', 'C'].map(col => renderSeat(row, col))}
+                        {/* Fuselage / Cabin */}
+                        <div className="bg-white border-x-[12px] border-slate-200 px-6 py-10 relative shadow-inner">
+                            {/* Static Labels */}
+                            <div className="flex justify-center gap-[6.5rem] md:gap-[8.5rem] mb-8 text-[11px] font-black text-slate-400">
+                                <div className="flex gap-10 md:gap-14"><span>A</span><span>B</span><span>C</span></div>
+                                <div className="flex gap-10 md:gap-14"><span>D</span><span>E</span><span>F</span></div>
+                            </div>
+
+                            <div className="space-y-4">
+                                {[...Array(30)].map((_, i) => {
+                                    const row = i + 1;
+                                    return (
+                                        <div key={row} className="flex items-center justify-center gap-3 md:gap-4 group/row">
+                                            <div className="w-6 text-[10px] font-black text-slate-300 group-hover/row:text-blue-400 transition-colors">{row}</div>
+                                            <div className="flex gap-2 md:gap-3">
+                                                {['A', 'B', 'C'].map(col => renderSeat(row, col))}
+                                            </div>
+                                            <div className="w-8 md:w-12 flex justify-center">
+                                                <div className="h-10 w-0.5 bg-slate-100 rounded-full"></div>
+                                            </div>
+                                            <div className="flex gap-2 md:gap-3">
+                                                {['D', 'E', 'F'].map(col => renderSeat(row, col))}
+                                            </div>
+                                            <div className="w-6 text-[10px] font-black text-slate-300 text-right group-hover/row:text-blue-400 transition-colors">{row}</div>
                                         </div>
-                                        <div className="w-8 md:w-12 h-10 flex items-center justify-center">
-                                            <span className="text-[9px] font-black text-slate-200 uppercase tracking-widest [writing-mode:vertical-lr]">Aisle</span>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            {['D', 'E', 'F'].map(col => renderSeat(row, col))}
-                                        </div>
-                                        <div className="absolute -right-8 text-[10px] font-black text-slate-300">{row}</div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
 
-                        <div className="flex justify-center mt-12">
-                            <div className="w-full max-w-[280px] h-12 bg-white rounded-b-2xl border-x-4 border-b-4 border-slate-100 flex items-center justify-center">
-                                <span className="text-[10px] font-black text-slate-200 uppercase tracking-widest">Tail Section</span>
+                        {/* Tail Section */}
+                        <div className="flex justify-center -mt-1">
+                            <div className="w-[340px] h-20 bg-white rounded-b-[40px] border-x-[12px] border-b-[12px] border-slate-200 flex items-center justify-center bg-gradient-to-t from-slate-50 to-white">
+                                <span className="text-[10px] font-black text-slate-200 uppercase tracking-widest">Rear Exit</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <button
-                onClick={onNext}
-                disabled={selectedSeats.length < passengers.length}
-                className="w-full py-5 bg-[#f26a36] hover:bg-[#e05d2e] disabled:bg-gray-300 disabled:shadow-none text-white rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-xl shadow-orange-100 flex items-center justify-center gap-3"
-            >
-                Continue to Add-ons <Check className="w-6 h-6" />
-            </button>
+            {/* Float Action Button / Indicator */}
+            <div className="flex flex-col md:flex-row gap-4">
+                <button 
+                    onClick={() => window.history.back()}
+                    className="flex-1 py-5 bg-white border-2 border-slate-100 text-slate-500 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-50 transition-all"
+                >
+                    Back
+                </button>
+                <button
+                    onClick={onNext}
+                    disabled={selectedSeats.length < passengers.length}
+                    className="flex-[2] py-5 bg-[#f26a36] hover:bg-[#e05d2e] disabled:bg-slate-100 disabled:text-slate-300 disabled:shadow-none text-white rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-2xl shadow-orange-200 flex items-center justify-center gap-4 relative overflow-hidden group"
+                >
+                    <span className="relative z-10 flex items-center gap-3">
+                        Continue to Payment <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                    <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                </button>
+            </div>
         </div>
     );
 };

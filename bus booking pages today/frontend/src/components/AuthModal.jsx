@@ -12,6 +12,36 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [otpLoading, setOtpLoading] = useState(false);
     const [error, setError] = useState('');
+    const [timer, setTimer] = useState(0);
+
+    const resetLoginForm = () => {
+        console.log(">>> [FRONTEND] Resetting Login Form");
+        setMobileNumber('');
+        setOtp('');
+        setShowOtpInput(false);
+        setFullName('');
+        setError('');
+        setLoading(false);
+        setTimer(0);
+        // Clear any stored leftovers if any
+        localStorage.removeItem('temp_login_num');
+    };
+
+    React.useEffect(() => {
+        if (isOpen) {
+            resetLoginForm();
+        }
+    }, [isOpen]);
+
+    React.useEffect(() => {
+        let interval;
+        if (timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [timer]);
 
     if (!isOpen) return null;
 
@@ -32,6 +62,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
             }
             console.log('>>> [FRONTEND] OTP request successful, showing input field.');
             setShowOtpInput(true);
+            setTimer(30);
         } catch (err) {
             // Show the backend's message (e.g. "User not registered. Please register first.")
             setError((err.message || 'FAILED TO SEND OTP').toUpperCase());
@@ -41,11 +72,13 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
     };
 
     const handleRefreshOtp = async () => {
+        if (timer > 0) return;
         setOtpLoading(true);
         setError('');
         try {
             await getOtp(mobileNumber);
             setOtp('');
+            setTimer(30);
         } catch (err) {
             setError(err.message || 'FAILED TO REFRESH OTP');
         } finally {
@@ -240,7 +273,14 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
                                     <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
                                         <div className="flex items-center justify-between px-1">
                                             <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Enter 6-Digit OTP</p>
-                                            <button onClick={handleRefreshOtp} className="text-[9px] font-black text-[#d84e55] uppercase tracking-widest hover:underline">Resend OTP</button>
+                                            <button 
+                                                disabled={timer > 0 || otpLoading}
+                                                onClick={handleRefreshOtp} 
+                                                className={`text-[9px] font-black uppercase tracking-widest transition-all
+                                                    ${timer > 0 ? 'text-gray-300 cursor-not-allowed' : 'text-[#d84e55] hover:underline'}`}
+                                            >
+                                                {timer > 0 ? `Resend OTP in ${timer}s` : 'Resend OTP'}
+                                            </button>
                                         </div>
                                         <div className="relative group">
                                             <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-[#d84e55] transition-colors" />

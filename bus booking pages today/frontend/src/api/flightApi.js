@@ -39,6 +39,10 @@ const flightApi = {
         const res = await Axios.post('/flights', flightData);
         return res.data;
     },
+    createFlightSchedule: async (scheduleData) => {
+        const res = await Axios.post('/flights/schedules', scheduleData);
+        return res.data;
+    },
     updateFlightStatus: async (flightId, status) => {
         const res = await Axios.put(`/flights/${flightId}`, { status });
         return res.data;

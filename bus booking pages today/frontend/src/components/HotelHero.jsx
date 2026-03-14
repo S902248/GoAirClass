@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Calendar, MapPin, Users, ChevronDown, Check } from 'lucide-react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const HotelHero = ({ setView }) => {
     const navigate = useNavigate();
@@ -14,6 +16,10 @@ const HotelHero = ({ setView }) => {
     const toggleFilter = (key) => setTagFilters(prev => ({ ...prev, [key]: !prev[key] }));
 
     const handleSearch = () => {
+        if (!destination) {
+            toast.error("Add first destination", { position: "top-right", theme: "colored" });
+            return;
+        }
         navigate('/hotel-results', { state: { city: destination } });
     };
 
@@ -150,6 +156,7 @@ const HotelHero = ({ setView }) => {
 
             {/* Subtle Gradient Overlays */}
             <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white to-transparent z-0 lg:hidden" />
+            <ToastContainer />
         </section>
     );
 };
