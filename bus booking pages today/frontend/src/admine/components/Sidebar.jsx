@@ -19,7 +19,9 @@ import {
     Hotel,
     BedDouble,
     BookOpen,
-    Tag
+    Tag,
+    Train,
+    Search
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 
@@ -69,9 +71,9 @@ const NavGroup = ({ icon: Icon, label, children, defaultOpen = false }) => {
             {/* Animated submenu */}
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${open ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
                 <div className="ml-11 mr-4 pl-3 py-1 border-l-2 border-red-100 space-y-0.5">
-                    {children.map((item) => (
+                    {children.map((item, index) => (
                         <NavLink
-                            key={item.to}
+                            key={`${item.to}-${index}`}
                             to={item.to}
                             className={({ isActive }) => `
                                 flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-bold uppercase tracking-wider transition-all duration-150
@@ -169,6 +171,19 @@ const Sidebar = ({ user, onLogout }) => {
                         { icon: Plane, label: 'Add Flight', to: '/admine/flights/add' },
                         { icon: Ticket, label: 'Flight Bookings', to: '/admine/flights/bookings' },
                         { icon: UsersRound, label: 'Passengers', to: '/admine/flights/passengers' },
+                    ]}
+                </NavGroup>
+
+                {/* ── Train group ── */}
+                <SectionLabel label="Train" />
+                <NavGroup icon={Train} label="Train">
+                    {[
+                        { icon: LayoutDashboard, label: 'Dashboard', to: '/admine/train/dashboard' },
+                        { icon: Train, label: 'Train List', to: '/admine/train/all' },
+                        { icon: Ticket, label: 'Bookings', to: '/admine/train/bookings' },
+                        { icon: Users, label: 'Seat Availability', to: '/admine/train/availability' },
+                        { icon: Search, label: 'PNR Search', to: '/admine/train/pnr' },
+                        { icon: BarChart3, label: 'Reports', to: '/admine/train/reports' },
                     ]}
                 </NavGroup>
 

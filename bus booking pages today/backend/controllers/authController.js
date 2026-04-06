@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const AdminRequest = require('../models/AdminRequest');
+const { verifyCaptcha } = require('../utils/captchaService');
+const { sendOTP } = require('../utils/smsService');
 
 // Generate a random 6-digit OTP
 const generate6DigitOtp = () => {
@@ -142,6 +144,124 @@ const verifyOtp = async (req, res) => {
 const loginWithOtp = getOtp;
 const verifyLoginOtp = verifyOtp;
 
+/**
+ * sendRegistrationOtp
+ * Validates fullName, mobileNumber, captchaToken.
+ * Generates OTP, sets 5-min expiry, resets otpAttempts.
+ */
+const sendRegistrationOtp = async (req, res) => {
+    try {
+        const { fullName, mobileNumber, captchaToken } = req.body;
+
+        if (!fullName || !mobileNumber || !captchaToken) {
+            return res.status(400).json({ success: false, message: "Full Name, Mobile Number, and CAPTCHA are required" });
+        }
+
+        if (!/^\d{10}$/.test(mobileNumber)) {
+            return res.status(400).json({ success: false, message: "Valid 10-digit mobile number is required" });
+        }
+
+        const isCaptchaValid = await verifyCaptcha(captchaToken);
+        if (!isCaptchaValid) {
+            return res.status(400).json({ success: false, message: "Invalid CAPTCHA. Please try again." });
+        }
+
+        const otp = generate6DigitOtp();
+        const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+        let user = await User.findOne({ mobileNumber });
+        if (!user) {
+            user = new User({
+                fullName,
+                mobileNumber,
+                role: "user"
+            });
+        } else {
+            // Update name if they are registering an existing account
+            user.fullName = fullName;
+        }
+
+        user.otp = otp;
+        user.otpExpiry = otpExpiry;
+        user.otpAttempts = 0; // reset attempts
+        await user.save();
+
+        await sendOTP(mobileNumber, otp);
+
+        res.status(200).json({ success: true, message: "OTP sent successfully" });
+    } catch (error) {
+        console.error("sendRegistrationOtp error:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+/**
+ * verifyRegistrationOtp
+ * Verifies OTP with max 3 attempts limit.
+ */
+const verifyRegistrationOtp = async (req, res) => {
+    try {
+        const { mobileNumber, otp } = req.body;
+
+        if (!mobileNumber || !otp) {
+            return res.status(400).json({ success: false, message: "Mobile number and OTP are required" });
+        }
+
+        const user = await User.findOne({ mobileNumber });
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found. Please request a new OTP." });
+        }
+
+        if (!user.otp || !user.otpExpiry) {
+            return res.status(400).json({ success: false, message: "No OTP found. Please request a new OTP." });
+        }
+
+        if (user.otpAttempts >= 3) {
+            return res.status(400).json({ success: false, message: "Maximum OTP attempts exceeded. Please request a new OTP." });
+        }
+
+        if (new Date() > user.otpExpiry) {
+            user.otp = null;
+            user.otpExpiry = null;
+            user.otpAttempts = 0;
+            await user.save();
+            return res.status(400).json({ success: false, message: "OTP expired. Please request a new one." });
+        }
+
+        if (user.otp !== otp) {
+            user.otpAttempts += 1;
+            await user.save();
+            return res.status(400).json({ success: false, message: `Invalid OTP. Attempts left: ${3 - user.otpAttempts}` });
+        }
+
+        // Success
+        user.otp = null;
+        user.otpExpiry = null;
+        user.otpAttempts = 0;
+        await user.save();
+
+        const token = jwt.sign(
+            { id: user._id, role: user.role },
+            process.env.JWT_SECRET || 'fallback_secret',
+            { expiresIn: "30d" }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Registration successful",
+            token,
+            user: {
+                _id: user._id,
+                fullName: user.fullName,
+                mobileNumber: user.mobileNumber,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error("verifyRegistrationOtp error:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
 // Get Dashboard Statistics
 const getDashboardStats = async (req, res) => {
     try {
@@ -320,6 +440,8 @@ module.exports = {
     verifyOtp,
     loginWithOtp,
     verifyLoginOtp,
+    sendRegistrationOtp,
+    verifyRegistrationOtp,
     getDashboardStats,
     submitAdminRequest,
     getAdminRequests,

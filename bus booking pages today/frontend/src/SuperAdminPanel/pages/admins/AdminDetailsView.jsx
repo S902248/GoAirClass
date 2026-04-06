@@ -100,7 +100,7 @@ const AdminDetailsView = () => {
                   </td>
                   <td className="px-6 py-5 text-right">
                     <span className="px-3 py-1.5 bg-emerald-100 text-emerald-600 border border-emerald-200 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 w-max ml-auto">
-                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16_185_129_/_0.5)] animate-pulse" />
                       Active
                     </span>
                   </td>

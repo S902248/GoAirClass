@@ -61,7 +61,7 @@ const Select = ({ className = '', children, ...props }) => (
 
 /** Section card */
 const Card = ({ children, className = '' }) => (
-    <div className={`bg-white rounded-[32px] border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.04)] ${className}`}>
+    <div className={`bg-white rounded-[32px] border border-gray-100 shadow-[0_4px_24px_rgba(0_0_0_/_0.04)] ${className}`}>
         {children}
     </div>
 );
@@ -294,8 +294,10 @@ const FlightBookingFlow = () => {
                             bookingId: booking.bookingId,
                         });
                         if (verify.data.success) {
-                            sessionStorage.setItem('lastBooking', JSON.stringify(booking));
-                            navigate(`/flight-confirmation/${booking.bookingId}`);
+                            const finalPnr = verify.data.pnr || booking.pnr;
+                            const finalBooking = { ...booking, pnr: finalPnr };
+                            sessionStorage.setItem('lastBooking', JSON.stringify(finalBooking));
+                            navigate(`/flight-ticket/${finalPnr}`);
                         }
                     },
                     prefill: {

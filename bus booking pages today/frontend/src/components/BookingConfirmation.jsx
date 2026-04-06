@@ -143,10 +143,16 @@ const BookingConfirmation = ({ bus, seats, boarding, dropping, searchParams, pay
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                    <button className="flex-1 flex items-center justify-center gap-2.5 py-4 bg-white border border-gray-200 rounded-2xl font-black text-[14px] text-gray-700 hover:bg-gray-50 transition-all shadow-sm hover:border-gray-300 active:scale-95">
-                        <Download className="h-5 w-5" /> Download Ticket
+                    <button 
+                        onClick={() => setView(`ticket/${bookingId}`)}
+                        className="flex-1 flex items-center justify-center gap-2.5 py-4 bg-white border border-gray-200 rounded-2xl font-black text-[14px] text-gray-700 hover:bg-gray-50 transition-all shadow-sm hover:border-gray-300 active:scale-95"
+                    >
+                        <Download className="h-5 w-5" /> Get E-Ticket
                     </button>
-                    <button className="flex-1 flex items-center justify-center gap-2.5 py-4 bg-white border border-gray-200 rounded-2xl font-black text-[14px] text-gray-700 hover:bg-gray-50 transition-all shadow-sm hover:border-gray-300 active:scale-95">
+                    <button 
+                        onClick={() => setView(`ticket/${bookingId}`)}
+                        className="flex-1 flex items-center justify-center gap-2.5 py-4 bg-white border border-gray-200 rounded-2xl font-black text-[14px] text-gray-700 hover:bg-gray-50 transition-all shadow-sm hover:border-gray-300 active:scale-95"
+                    >
                         <Share2 className="h-5 w-5" /> Share Ticket
                     </button>
                     <button

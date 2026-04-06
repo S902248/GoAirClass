@@ -115,7 +115,7 @@ const Coupons = () => {
             </div>
 
             {showForm && (
-                <div className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_8px_40px_rgb(0,0,0,0.06)] p-6 md:p-8">
+                <div className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_8px_40px_rgb(0_0_0_/_0.06)] p-6 md:p-8">
                     <div className="flex items-center justify-between mb-8">
                         <h2 className="text-xl font-black text-gray-900">Create New Coupon</h2>
                         <button onClick={() => setShowForm(false)} className="p-2 bg-gray-50 text-gray-400 hover:text-red-500 rounded-full transition-colors">

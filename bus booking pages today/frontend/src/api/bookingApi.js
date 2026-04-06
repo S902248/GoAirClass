@@ -59,6 +59,19 @@ export const getBookingDetails = async (bookingId) => {
 };
 
 /**
+ * Get specific booking details by PNR
+ * @param {string} pnr 
+ */
+export const getBookingByPNR = async (pnr) => {
+    try {
+        const response = await Axios.get(`/bookings/pnr/${pnr}`);
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};
+
+/**
  * Cancel a booking
  * @param {Object} bookingData - { bookingId, seatNumbers }
  */

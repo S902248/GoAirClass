@@ -131,7 +131,7 @@ const InlineSeatSelection = ({ bus, onProceed, isLoggedIn }) => {
                         )}
 
                         <div className="relative">
-                            <div className="relative bg-white rounded-[40px] p-8 border-2 border-gray-100 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)] w-full max-w-2xl overflow-hidden">
+                            <div className="relative bg-white rounded-[40px] p-8 border-2 border-gray-100 shadow-[0_20px_50px_-20px_rgba(0_0_0_/_0.05)] w-full max-w-2xl overflow-hidden">
 
                                 {/* Steering & Entrance */}
                                 <div className="flex justify-between items-center mb-12 border-b border-gray-50 pb-8">

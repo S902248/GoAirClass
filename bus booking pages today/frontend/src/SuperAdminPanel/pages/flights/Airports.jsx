@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MapPin, Search, Plus, Trash2, Edit3 } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import Axios from '../../../api/Axios';
 
 const Airports = () => {
     const [airports, setAirports] = useState([]);
@@ -13,9 +12,8 @@ const Airports = () => {
     const fetchAirports = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API}/api/airports`);
-            const data = await res.json();
-            setAirports(data.airports || []);
+            const res = await Axios.get('/airports');
+            setAirports(res.data.airports || []);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
@@ -24,20 +22,20 @@ const Airports = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await fetch(`${API}/api/airports`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(form)
-        });
-        setForm({ airportName: '', airportCode: '', city: '', country: '' });
-        setShowForm(false);
-        fetchAirports();
+        try {
+            await Axios.post('/airports', form);
+            setForm({ airportName: '', airportCode: '', city: '', country: '' });
+            setShowForm(false);
+            fetchAirports();
+        } catch (e) { console.error(e); }
     };
 
     const deleteAirport = async (id) => {
         if (!window.confirm('Delete this airport?')) return;
-        await fetch(`${API}/api/airports/${id}`, { method: 'DELETE' });
-        fetchAirports();
+        try {
+            await Axios.delete(`/airports/${id}`);
+            fetchAirports();
+        } catch (e) { console.error(e); }
     };
 
     const filtered = airports.filter(a =>

@@ -4,7 +4,13 @@ const Room = require('../../models/hotel/Room');
 const Hotel = require('../../models/hotel/Hotel');
 const HotelCoupon = require('../../models/hotel/HotelCoupon');
 const RoomInventory = require('../../models/hotel/RoomInventory');
-const PDFDocument = require('pdfkit');
+const puppeteer = require('puppeteer');
+const qrcode = require('qrcode');
+const { generateHotelInvoiceHTML } = require('../../utils/hotelInvoiceTemplate');
+
+const generateBookingId = () => {
+    return "HTL" + Math.random().toString(36).substr(2, 8).toUpperCase();
+};
 
 const getAllHotelBookings = async (req, res) => {
     try {
@@ -45,10 +51,25 @@ const getUserHotelBookings = async (req, res) => {
 
 const getHotelBookingById = async (req, res) => {
     try {
-        const booking = await HotelBooking.findById(req.params.id)
-            .populate('hotelId', 'hotelName city address images')
-            .populate('roomId', 'roomType price totalRooms');
-        
+        const id = req.params.id.trim();
+        let booking = null;
+
+        if (id.startsWith('HTL')) {
+            // Case-insensitive exact match on bookingId
+            booking = await HotelBooking.findOne({ bookingId: { $regex: `^${id}$`, $options: 'i' } })
+                .populate('hotelId', 'hotelName city address images')
+                .populate('roomId', 'roomType price totalRooms')
+                .populate('userId', 'fullName email mobileNumber');
+        }
+
+        // Fallback: try _id (valid ObjectId)
+        if (!booking && id.match(/^[a-f\d]{24}$/i)) {
+            booking = await HotelBooking.findById(id)
+                .populate('hotelId', 'hotelName city address images')
+                .populate('roomId', 'roomType price totalRooms')
+                .populate('userId', 'fullName email mobileNumber');
+        }
+
         if (!booking) {
             return res.status(404).json({ success: false, message: 'Booking not found' });
         }
@@ -183,7 +204,19 @@ async function createBooking(req, res) {
         // Determine payment status based on razorpay data
         const isPaid = !!(razorpayPaymentId && razorpayOrderId);
 
+        let bookingId = generateBookingId();
+        let isUnique = false;
+        while (!isUnique) {
+            const existing = await HotelBooking.findOne({ bookingId });
+            if (existing) {
+                bookingId = generateBookingId();
+            } else {
+                isUnique = true;
+            }
+        }
+
         const booking = new HotelBooking({
+            bookingId,
             hotelId,
             roomId,
             userId: req.user.id,
@@ -226,7 +259,7 @@ async function createBooking(req, res) {
             }
         }
 
-        res.status(201).json({ success: true, booking, message: 'Booking created successfully' });
+        res.status(201).json({ success: true, booking, bookingId: booking.bookingId, message: 'Booking created successfully' });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -268,90 +301,55 @@ async function generateInvoice(req, res) {
             return res.status(404).json({ success: false, message: 'Booking not found' });
         }
 
-        const doc = new PDFDocument({ margin: 50 });
+        // Construct Direct PDF Download URL (Points to backend API)
+        let host = req.get('host');
+        if (host && (host.includes('localhost') || host.includes('127.0.0.1'))) {
+            const os = require('os');
+            const interfaces = os.networkInterfaces();
+            let localIp = '127.0.0.1';
+            for (const name of Object.keys(interfaces)) {
+                for (const iface of interfaces[name]) {
+                    if (iface.family === 'IPv4' && !iface.internal) {
+                        localIp = iface.address;
+                        break;
+                    }
+                }
+            }
+            const port = host.split(':')[1] || '5000';
+            host = `${localIp}:${port}`;
+        }
+        
+        const protocol = (host && (host.match(/^[0-9.]+:\d+$/) || host.includes('localhost'))) ? 'http' : 'https';
+        const backendUrl = process.env.BACKEND_URL || `${protocol}://${host || 'localhost:5000'}`;
+        const qrContent = `${backendUrl}/api/hotel-bookings/${booking._id}/invoice`;
+        const qrCodeDataUrl = await qrcode.toDataURL(qrContent, { margin: 1, width: 120 });
+
+        // Generate HTML
+        const htmlContent = generateHotelInvoiceHTML(booking, qrCodeDataUrl);
+
+        // Puppeteer PDF Gen
+        const browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: { top: '0', bottom: '0', left: '0', right: '0' }
+        });
+
+        await browser.close();
+
         const filename = `Invoice_${booking._id}.pdf`;
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-
-        doc.pipe(res);
-
-        // Header
-        doc.fillColor('#006ce4').fontSize(24).text('GOAIRCLASS', { align: 'left' });
-        doc.fillColor('#444444').fontSize(10).text('www.goairclass.com', { align: 'left' });
-        doc.moveDown();
-
-        doc.fillColor('#000000').fontSize(20).text('INVOICE', { align: 'right' });
-        doc.fontSize(10).text(`Invoice Number: INV-${booking._id.toString().substring(0, 8).toUpperCase()}`, { align: 'right' });
-        doc.text(`Booking ID: ${booking._id}`, { align: 'right' });
-        doc.text(`Date: ${new Date().toLocaleDateString()}`, { align: 'right' });
-        doc.moveDown(2);
-
-        // Customer & Hotel Details
-        const startY = 150;
-        doc.fontSize(12).fillColor('#000').text('Customer Details', 50, startY, { underline: true });
-        doc.fontSize(10).text(`Name: ${booking.guestName}`, 50, startY + 20);
-        doc.text(`Email: ${booking.guestEmail}`, 50, startY + 35);
-        doc.text(`Phone: ${booking.guestPhone}`, 50, startY + 50);
-
-        doc.fontSize(12).text('Hotel Details', 300, startY, { underline: true });
-        doc.fontSize(10).text(`Hotel: ${booking.hotelId.hotelName}`, 300, startY + 20);
-        doc.text(`Address: ${booking.hotelId.address}`, 300, startY + 35);
-        doc.text(`City: ${booking.hotelId.city}`, 300, startY + 50);
-        doc.text(`Room Type: ${booking.roomType}`, 300, startY + 65);
-        doc.text(`Room No: ${booking.assignedRoomNumber || 'N/A'}`, 300, startY + 80);
-        doc.moveDown(4);
-
-        // Booking Summary Table
-        const tableTop = 270;
-        doc.fontSize(12).text('Booking Summary', 50, tableTop, { underline: true });
+        res.setHeader('Content-Length', pdfBuffer.length);
         
-        const headerY = tableTop + 25;
-        doc.fontSize(10).font('Helvetica-Bold');
-        doc.text('Description', 50, headerY);
-        doc.text('Check-in', 150, headerY);
-        doc.text('Check-out', 250, headerY);
-        doc.text('Guests', 350, headerY);
-        doc.text('Nights', 450, headerY);
-
-        const checkIn = new Date(booking.checkInDate);
-        const checkOut = new Date(booking.checkOutDate);
-        const nights = Math.max(1, Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24)));
-
-        doc.font('Helvetica');
-        const itemY = headerY + 20;
-        doc.text(booking.roomType, 50, itemY);
-        doc.text(booking.checkInDate, 150, itemY);
-        doc.text(booking.checkOutDate, 250, itemY);
-        doc.text(booking.guests.toString(), 350, itemY);
-        doc.text(nights.toString(), 450, itemY);
-
-        doc.moveTo(50, itemY + 15).lineTo(550, itemY + 15).stroke();
-
-        // Payment Details
-        const paymentY = itemY + 50;
-        doc.fontSize(12).font('Helvetica-Bold').text('Payment Summary', 300, paymentY, { underline: true });
-        
-        const priceY = paymentY + 25;
-        doc.fontSize(10).font('Helvetica').text('Base Price:', 300, priceY);
-        doc.text(`INR ${booking.totalPrice - (booking.taxes || 0)}`, 450, priceY, { align: 'right' });
-
-        doc.text('Taxes & Fees:', 300, priceY + 15);
-        doc.text(`INR ${booking.taxes || 0}`, 450, priceY + 15, { align: 'right' });
-
-        doc.moveTo(300, priceY + 30).lineTo(550, priceY + 30).stroke();
-
-        doc.fontSize(12).font('Helvetica-Bold').text('Total Amount Paid:', 300, priceY + 40);
-        doc.text(`INR ${booking.totalPrice}`, 450, priceY + 40, { align: 'right' });
-
-        doc.moveDown(2);
-        doc.fontSize(10).font('Helvetica').text(`Payment Status: ${booking.paymentStatus}`, 300, doc.y, { align: 'left' });
-
-        // Footer
-        doc.fontSize(10).fillColor('#888').text('This is a computer-generated invoice. No signature required.', 50, 700, { align: 'center' });
-        doc.text('For support, contact support@goairclass.com or call +91-1234567890.', { align: 'center' });
-
-        doc.end();
+        res.end(pdfBuffer);
 
     } catch (err) {
         console.error('Invoice Generation Error:', err);
@@ -361,4 +359,28 @@ async function generateInvoice(req, res) {
     }
 }
 
-module.exports = { getAllHotelBookings, getBookingsByHotel, cancelBooking, createBooking, checkRoomAvailability, getUserHotelBookings, generateInvoice, getHotelBookingById };
+const migrateBookingIds = async (req, res) => {
+    try {
+        const bookingsWithoutId = await HotelBooking.find({
+            $or: [{ bookingId: null }, { bookingId: { $exists: false } }, { bookingId: '' }]
+        });
+
+        let updated = 0;
+        for (const booking of bookingsWithoutId) {
+            let newId = generateBookingId();
+            // Ensure uniqueness
+            while (await HotelBooking.findOne({ bookingId: newId })) {
+                newId = generateBookingId();
+            }
+            booking.bookingId = newId;
+            await booking.save();
+            updated++;
+        }
+
+        res.json({ success: true, message: `Migrated ${updated} bookings`, updated });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+module.exports = { getAllHotelBookings, getBookingsByHotel, cancelBooking, createBooking, checkRoomAvailability, getUserHotelBookings, generateInvoice, getHotelBookingById, migrateBookingIds };

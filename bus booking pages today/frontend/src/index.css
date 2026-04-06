@@ -3,13 +3,32 @@
 
 @theme {
     --font-gelasio: "Gelasio", serif;
-    --color-brand-blue: #3b5998;
-    --color-deep-navy: #020617;
-    --color-charcoal-glass: #020617;
-    --color-soft-white: #f8fafc;
-    --color-radiant-coral: #f43f5e;
-    --color-vibrant-violet: #8b5cf6;
-    --color-pink-accent: #ec4899;
+    --color-brand-blue: #3b82f6;
+    --color-deep-navy: #0f172a;
+    --color-charcoal-glass: #f1f5f9;
+    --color-soft-white: #ffffff;
+    --color-radiant-coral: #0ea5e9;
+    /* Fresh Azure */
+    --color-vibrant-violet: #10b981;
+    /* Mint Green */
+    --color-pink-accent: #6366f1;
+
+    /* Primary Palette (Azure) */
+    --color-primary-50: #f0f9ff;
+    --color-primary-100: #e0f2fe;
+    --color-primary-200: #bae6fd;
+    --color-primary-300: #7dd3fc;
+    --color-primary-400: #38bdf8;
+    --color-primary-500: #0ea5e9;
+    --color-primary-600: #0284c7;
+    --color-primary-700: #0369a1;
+    --color-primary-800: #075985;
+    --color-primary-900: #0c4a6e;
+    --color-train-primary: #ea580c;
+    --color-train-primary-dark: #c2410c;
+    --color-train-primary-light: #fff7ed;
+    --color-train-secondary: #0f172a;
+    --color-train-accent: #f59e0b;
 
     --animate-float: float 6s ease-in-out infinite;
     --animate-shimmer: shimmer 2s linear infinite;
@@ -318,6 +337,7 @@
             opacity: 0;
             transform: translateX(20px);
         }
+
         100% {
             opacity: 1;
             transform: translateX(0);
@@ -325,9 +345,12 @@
     }
 
     @keyframes bounce-subtle {
-        0%, 100% {
+
+        0%,
+        100% {
             transform: translateY(0);
         }
+
         50% {
             transform: translateY(-4px);
         }
@@ -410,6 +433,10 @@
 
     .sun-flare {
         @apply absolute -top-20 -right-20 w-96 h-96 bg-orange-400/20 rounded-full blur-[120px] mix-blend-screen animate-[pulse-flare_8s_ease-in-out_infinite];
+    }
+
+    .card {
+        @apply bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0_0_0_/_0.04)] rounded-[2.5rem] transition-all duration-500;
     }
 
     /* Glassmorphism Utilities */
@@ -545,7 +572,9 @@
 
 body {
     @apply antialiased overflow-x-hidden font-sans;
-    background-color: #f8fafc;
+    background-color: #ffffff;
+    /* Fresh White */
+    color: #0f172a;
 }
 
 ::selection {

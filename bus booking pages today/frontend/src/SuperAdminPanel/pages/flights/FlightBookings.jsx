@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Calendar } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import Axios from '../../../api/Axios';
 
 const FlightBookings = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`${API}/api/flight-bookings`)
-            .then(r => r.json())
-            .then(d => setBookings(d.bookings || []))
+        Axios.get('/flight-bookings')
+            .then(res => setBookings(res.data.bookings || []))
             .catch(e => console.error(e))
             .finally(() => setLoading(false));
     }, []);

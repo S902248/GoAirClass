@@ -44,21 +44,35 @@ const CancelTicket = () => {
         if (!b || !b.travelDate) return;
 
         const now = new Date();
-        const travelParts = b.travelDate.split('-');
-        const year = parseInt(travelParts[0], 10);
-        const month = parseInt(travelParts[1], 10) - 1;
-        const day = parseInt(travelParts[2], 10);
+        
+        // Robust Date Parsing
+        let year, month, day;
+        const parts = b.travelDate.split(/[-/]/);
+        if (parts[0].length === 4) {
+            // YYYY-MM-DD
+            year = parseInt(parts[0], 10);
+            month = parseInt(parts[1], 10) - 1;
+            day = parseInt(parts[2], 10);
+        } else {
+            // DD-MM-YYYY
+            day = parseInt(parts[0], 10);
+            month = parseInt(parts[1], 10) - 1;
+            year = parseInt(parts[2], 10);
+        }
 
+        // Extract time from boardingPoint or schedule
         let hour = 10, minute = 0; // Default 10:00 AM
-        if (b.schedule && b.schedule.departureTime) {
-            const timeParts = b.schedule.departureTime.split(':');
-            hour = parseInt(timeParts[0], 10);
-            minute = parseInt(timeParts[1], 10);
-        } else if (b.boardingPoint) {
-            const match = b.boardingPoint.match(/(\d{2}):(\d{2})/);
+        const timeStr = b.schedule?.departureTime || (b.boardingPoint?.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i)?.[0]);
+        
+        if (timeStr) {
+            const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
             if (match) {
                 hour = parseInt(match[1], 10);
                 minute = parseInt(match[2], 10);
+                const ampm = match[3] ? match[3].toUpperCase() : null;
+                
+                if (ampm === 'PM' && hour < 12) hour += 12;
+                if (ampm === 'AM' && hour === 12) hour = 0;
             }
         }
 
@@ -76,7 +90,7 @@ const CancelTicket = () => {
         const cancellationCharges = totalFare - refundAmount;
 
         setRefundData({
-            hoursLeft: Math.max(0, hoursUntilDeparture),
+            hoursLeft: hoursUntilDeparture, // Keep raw value for better checks
             refundPercentage: percentage,
             refundAmount,
             cancellationCharges
@@ -85,8 +99,12 @@ const CancelTicket = () => {
 
     const handleConfirmCancellation = async () => {
         if (refundData.hoursLeft <= 0) {
-            alert("Cannot cancel ticket after journey has started.");
-            return;
+            const hasStarted = refundData.hoursLeft < 0;
+            const msg = hasStarted 
+                ? "The system indicates this journey has already started. You might not receive any refund. Do you still want to cancel?" 
+                : "The journey is about to start. You will receive 0 refund. Proceed?";
+            
+            if (!window.confirm(msg)) return;
         }
 
         try {
@@ -97,7 +115,6 @@ const CancelTicket = () => {
             });
 
             if (response.success) {
-                // Show success and redirect
                 alert("Your ticket has been cancelled successfully.");
                 navigate('/my-bookings');
             } else {
@@ -291,7 +308,7 @@ const CancelTicket = () => {
                         <ul className="space-y-3 text-sm font-medium text-gray-600">
                             <li className="flex items-start gap-3">
                                 <div className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0"></div>
-                                Cancellation is not allowed after the journey starts or within 6 hours of departure.
+                                Cancellation is not allowed after the journey starts. Within 6 hours of departure, no refund is provided.
                             </li>
                             <li className="flex items-start gap-3">
                                 <div className="mt-1 w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0"></div>
@@ -310,8 +327,8 @@ const CancelTicket = () => {
                     <div className="mt-10 mb-8 flex flex-col md:flex-row gap-4">
                         <button
                             onClick={handleConfirmCancellation}
-                            disabled={cancelling || refundData.hoursLeft <= 0}
-                            className={`flex-1 py-4 px-6 rounded-xl font-black uppercase tracking-widest text-sm shadow-lg transition-all flex justify-center items-center gap-2 ${cancelling || refundData.hoursLeft <= 0 ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-rose-500 text-white hover:bg-rose-600 shadow-rose-200 active:scale-[0.98]'}`}
+                            disabled={cancelling}
+                            className={`flex-1 py-4 px-6 rounded-xl font-black uppercase tracking-widest text-sm shadow-lg transition-all flex justify-center items-center gap-2 ${cancelling ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-rose-500 text-white hover:bg-rose-600 shadow-rose-200 active:scale-[0.98]'}`}
                         >
                             {cancelling ? (
                                 <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Processing...</>

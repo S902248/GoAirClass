@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { X, ShieldCheck, CreditCard, Star, Chrome, User, RefreshCw, Key } from 'lucide-react';
-import { registerUser, getUserProfile } from '../api/userApi';
-import { getOtp, verifyOtp, loginRequestOtp, verifyLoginOtp } from '../api/authApi';
+import { getUserProfile } from '../api/userApi';
+import { getOtp, verifyOtp, loginRequestOtp, verifyLoginOtp, sendRegistrationOtp, verifyRegistrationOtp } from '../api/authApi';
+import ReCAPTCHA from "react-google-recaptcha";
 
 const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
     const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
@@ -13,6 +14,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
     const [otpLoading, setOtpLoading] = useState(false);
     const [error, setError] = useState('');
     const [timer, setTimer] = useState(0);
+    const [captchaToken, setCaptchaToken] = useState('');
 
     const resetLoginForm = () => {
         console.log(">>> [FRONTEND] Resetting Login Form");
@@ -23,6 +25,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
         setError('');
         setLoading(false);
         setTimer(0);
+        setCaptchaToken('');
         // Clear any stored leftovers if any
         localStorage.removeItem('temp_login_num');
     };
@@ -50,21 +53,30 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
             setError('PLEASE ENTER A VALID 10-DIGIT MOBILE NUMBER');
             return;
         }
+        if (authMode === 'signup') {
+            if (fullName.trim().length < 2) {
+                setError('PLEASE ENTER YOUR FULL NAME');
+                return;
+            }
+            if (!captchaToken && import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
+                setError('PLEASE COMPLETE THE CAPTCHA');
+                return;
+            }
+        }
+        
         setOtpLoading(true);
         setError('');
         try {
             console.log('>>> [FRONTEND] Requesting OTP for:', mobileNumber);
             if (authMode === 'login') {
-                // NEW: Uses registration-check-first endpoint
                 await loginRequestOtp(mobileNumber);
             } else {
-                await getOtp(mobileNumber);
+                await sendRegistrationOtp({ fullName, mobileNumber, captchaToken: captchaToken || 'mock_token' });
             }
             console.log('>>> [FRONTEND] OTP request successful, showing input field.');
             setShowOtpInput(true);
             setTimer(30);
         } catch (err) {
-            // Show the backend's message (e.g. "User not registered. Please register first.")
             setError((err.message || 'FAILED TO SEND OTP').toUpperCase());
         } finally {
             setOtpLoading(false);
@@ -76,7 +88,11 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
         setOtpLoading(true);
         setError('');
         try {
-            await getOtp(mobileNumber);
+            if (authMode === 'login') {
+                await getOtp(mobileNumber);
+            } else {
+                await sendRegistrationOtp({ fullName, mobileNumber, captchaToken: captchaToken || 'mock_token' });
+            }
             setOtp('');
             setTimer(30);
         } catch (err) {
@@ -90,58 +106,43 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
         setLoading(true);
         setError('');
         try {
-            if (authMode === 'signup') {
-                const userData = { fullName, mobileNumber };
-                const result = await registerUser(userData);
-
-                // Clear any previous operator sessions
-                localStorage.removeItem('operatorToken');
-                localStorage.removeItem('operatorData');
-                localStorage.setItem('token', result.token);
-                localStorage.setItem('userData', JSON.stringify({
-                    name: result.fullName,
-                    mobile: result.mobileNumber,
-                    role: result.role
-                }));
-
-                onLoginSuccess({
-                    name: result.fullName,
-                    mobile: result.mobileNumber,
-                    role: result.role,
-                    token: result.token
-                });
-                onClose();
-            } else { // Login Mode (OTP Flow)
-                if (!showOtpInput) {
-                    await handleGetOtp();
-                } else {
-                    if (!otp || otp.length < 6) {
-                        setError('PLEASE ENTER 6-DIGIT OTP');
-                        setLoading(false);
-                        return;
-                    }
-                    // NEW: Uses registration-check-first verify endpoint
-                    const result = await verifyLoginOtp(mobileNumber, otp);
-
-                    // Clear any previous operator sessions
-                    localStorage.removeItem('operatorToken');
-                    localStorage.removeItem('operatorData');
-                    localStorage.setItem('token', result.token);
-                    localStorage.setItem('userData', JSON.stringify({
-                        name: result.user.fullName,
-                        mobile: result.user.mobileNumber,
-                        role: result.user.role
-                    }));
-
-                    onLoginSuccess({
-                        name: result.user.fullName,
-                        mobile: result.user.mobileNumber,
-                        role: result.user.role,
-                        token: result.token
-                    });
-                    onClose();
-                }
+            if (!showOtpInput) {
+                await handleGetOtp();
+                setLoading(false);
+                return;
             }
+
+            if (!otp || otp.length < 6) {
+                setError('PLEASE ENTER 6-DIGIT OTP');
+                setLoading(false);
+                return;
+            }
+
+            let result;
+            if (authMode === 'signup') {
+                result = await verifyRegistrationOtp({ mobileNumber, otp });
+            } else { // Login Mode (OTP Flow)
+                result = await verifyLoginOtp(mobileNumber, otp);
+            }
+
+            // Clear any previous operator sessions
+            localStorage.removeItem('operatorToken');
+            localStorage.removeItem('operatorData');
+            localStorage.setItem('token', result.token);
+            localStorage.setItem('userData', JSON.stringify({
+                name: result.user.fullName,
+                mobile: result.user.mobileNumber,
+                role: result.user.role
+            }));
+
+            onLoginSuccess({
+                name: result.user.fullName,
+                mobile: result.user.mobileNumber,
+                role: result.user.role,
+                token: result.token
+            });
+            onClose();
+
         } catch (err) {
             setError(err.message || (authMode === 'signup' ? 'SIGNUP FAILED' : 'INVALID OTP'));
         } finally {
@@ -241,17 +242,27 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
                                     </p>
                                 )}
                                 {authMode === 'signup' && (
-                                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-5">
                                         <div className="relative group">
                                             <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-[#d84e55] transition-colors" />
                                             <input
                                                 type="text"
                                                 placeholder="Full Name"
+                                                disabled={showOtpInput}
                                                 value={fullName}
                                                 onChange={(e) => setFullName(e.target.value)}
-                                                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-black focus:border-[#d84e55] outline-none transition-all"
+                                                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-black focus:border-[#d84e55] outline-none transition-all disabled:opacity-50"
                                             />
                                         </div>
+                                        
+                                        {!showOtpInput && (
+                                            <div className="flex justify-center scale-90 md:scale-100 origin-center bg-gray-50 rounded-xl p-2 border border-gray-100">
+                                                <ReCAPTCHA
+                                                    sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"} // Global Test Key
+                                                    onChange={(token) => setCaptchaToken(token)}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -269,13 +280,13 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
                                     </div>
                                 </div>
 
-                                {authMode === 'login' && showOtpInput && (
+                                {showOtpInput && (
                                     <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
                                         <div className="flex items-center justify-between px-1">
                                             <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Enter 6-Digit OTP</p>
-                                            <button 
+                                            <button
                                                 disabled={timer > 0 || otpLoading}
-                                                onClick={handleRefreshOtp} 
+                                                onClick={handleRefreshOtp}
                                                 className={`text-[9px] font-black uppercase tracking-widest transition-all
                                                     ${timer > 0 ? 'text-gray-300 cursor-not-allowed' : 'text-[#d84e55] hover:underline'}`}
                                             >
@@ -298,14 +309,14 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
                                 <button
                                     onClick={handleSubmit}
-                                    disabled={loading || (authMode === 'login' && mobileNumber.length < 10) || (authMode === 'login' && showOtpInput && otp.length < 6) || (authMode === 'signup' && (mobileNumber.length < 10 || fullName.trim().length < 2))}
+                                    disabled={loading || otpLoading || (mobileNumber.length < 10) || (showOtpInput && otp.length < 6) || (authMode === 'signup' && !showOtpInput && (fullName.trim().length < 2 || (!captchaToken && import.meta.env.VITE_RECAPTCHA_SITE_KEY)))}
                                     className={`w-full py-4.5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl
-                                        ${!loading && ((authMode === 'login' && mobileNumber.length === 10) || (authMode === 'signup' && mobileNumber.length === 10 && fullName.trim().length >= 2))
+                                        ${(!loading && !otpLoading && mobileNumber.length === 10 && (!showOtpInput || otp.length >= 6))
                                             ? 'bg-[#d84e55] text-white shadow-[#d84e55]/30 hover:shadow-[#d84e55]/40 hover:scale-[1.01] active:scale-95'
                                             : 'bg-gray-100 text-gray-300 cursor-not-allowed'}
                                     `}
                                 >
-                                    {loading ? 'PROCESSING...' : (authMode === 'login' ? (showOtpInput ? 'VERIFY & LOGIN' : 'GET OTP') : 'CREATE ACCOUNT')}
+                                    {loading || otpLoading ? 'PROCESSING...' : (showOtpInput ? (authMode === 'login' ? 'VERIFY & LOGIN' : 'VERIFY & REGISTER') : 'GET OTP')}
                                 </button>
 
                                 <div className="text-center">

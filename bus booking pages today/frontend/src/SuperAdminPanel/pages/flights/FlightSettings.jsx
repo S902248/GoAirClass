@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Settings } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import Axios from '../../../api/Axios';
 
 const FlightSettings = () => {
     const [settings, setSettings] = useState({ flightEnabled: true, bookingFee: 0, taxPercent: 0, cancellationPolicy: '', refundPolicy: '' });
@@ -10,19 +9,21 @@ const FlightSettings = () => {
     const [saved, setSaved] = useState(false);
 
     useEffect(() => {
-        fetch(`${API}/api/flight-settings`)
-            .then(r => r.json())
-            .then(d => { if (d.settings) setSettings(d.settings); })
+        Axios.get('/flight-settings')
+            .then(res => { if (res.data.settings) setSettings(res.data.settings); })
+            .catch(e => console.error(e))
             .finally(() => setLoading(false));
     }, []);
 
     const handleSave = async (e) => {
         e.preventDefault();
         setSaving(true);
-        await fetch(`${API}/api/flight-settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
-        setSaving(false);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        try {
+            await Axios.put('/flight-settings', settings);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
+        } catch (e) { console.error(e); }
+        finally { setSaving(false); }
     };
 
     if (loading) return <div className="h-64 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse" />;

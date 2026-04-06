@@ -59,9 +59,9 @@ const verifyPayment = async (req, res) => {
             booking.bookingStatus = 'CONFIRMED';
             booking.ticketStatus = 'ISSUED';
 
-            // 3. Generate Identifiers
-            booking.pnr = generatePNR();
-            booking.ticketNumber = generateTicketNumber();
+            // 3. Generate Identifiers if missing
+            if (!booking.pnr) booking.pnr = generatePNR();
+            if (!booking.ticketNumber) booking.ticketNumber = generateTicketNumber();
 
             // 4. Record Razorpay metadata
             booking.razorpayOrderId = razorpay_order_id;

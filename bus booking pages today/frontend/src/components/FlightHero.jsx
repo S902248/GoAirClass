@@ -305,7 +305,7 @@ const FlightHero = ({ setView }) => {
                             </div>
 
                             {showPassengerDropdown && (
-                                <div className="absolute top-[110%] right-0 w-[400px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-gray-100 z-[100] p-4 cursor-default" onClick={(e) => e.stopPropagation()}>
+                                <div className="absolute top-[110%] right-0 w-[400px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0_0_0_/_0.2)] border border-gray-100 z-[100] p-4 cursor-default" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex flex-col space-y-4">
                                         <h3 className="text-lg font-extrabold text-gray-900 border-b border-gray-50 pb-2">Travellers</h3>
                                         

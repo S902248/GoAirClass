@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Search, Plus, Trash2 } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import Axios from '../../../api/Axios';
 
 const Airlines = () => {
     const [airlines, setAirlines] = useState([]);
@@ -13,9 +12,8 @@ const Airlines = () => {
     const fetchAirlines = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API}/api/airlines`);
-            const data = await res.json();
-            setAirlines(data.airlines || []);
+            const res = await Axios.get('/airlines');
+            setAirlines(res.data.airlines || []);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
@@ -24,20 +22,20 @@ const Airlines = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await fetch(`${API}/api/airlines`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(form)
-        });
-        setForm({ airlineName: '', airlineCode: '', country: '', logo: '' });
-        setShowForm(false);
-        fetchAirlines();
+        try {
+            await Axios.post('/airlines', form);
+            setForm({ airlineName: '', airlineCode: '', country: '', logo: '' });
+            setShowForm(false);
+            fetchAirlines();
+        } catch (e) { console.error(e); }
     };
 
     const deleteAirline = async (id) => {
         if (!window.confirm('Delete this airline?')) return;
-        await fetch(`${API}/api/airlines/${id}`, { method: 'DELETE' });
-        fetchAirlines();
+        try {
+            await Axios.delete(`/airlines/${id}`);
+            fetchAirlines();
+        } catch (e) { console.error(e); }
     };
 
     const filtered = airlines.filter(a =>

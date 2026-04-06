@@ -37,6 +37,25 @@ export const verifyLoginOtp = async (mobileNumber, otp) => {
     }
 };
 
+// --- Registration ---
+export const sendRegistrationOtp = async (data) => {
+    try {
+        const response = await Axios.post('/auth/send-registration-otp', data);
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};
+
+export const verifyRegistrationOtp = async (data) => {
+    try {
+        const response = await Axios.post('/auth/verify-registration-otp', data);
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};
+
 // --- Admin Authentication ---
 export const adminLogin = async (credentials) => {
     try {

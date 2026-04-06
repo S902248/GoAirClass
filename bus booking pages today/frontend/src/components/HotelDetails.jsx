@@ -57,7 +57,7 @@ const HotelDetails = ({ setView }) => {
             }
         };
         fetchData();
-        
+
         // Refresh availability every 30 seconds for "real-time" feel
         const interval = setInterval(async () => {
             if (rooms.length > 0) {
@@ -120,7 +120,7 @@ const HotelDetails = ({ setView }) => {
             if (mapContainer && window.google?.maps?.Map) {
                 try {
                     const position = { lat: parseFloat(hotel.latitude), lng: parseFloat(hotel.longitude) };
-                    
+
                     // Initialize the map
                     const map = new window.google.maps.Map(mapContainer, {
                         center: position,
@@ -371,7 +371,7 @@ const HotelDetails = ({ setView }) => {
                     <div className="w-full lg:w-[380px] shrink-0">
                         <div className="sticky top-32">
                             {/* 5. ROOM PREVIEW CARD */}
-                            <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-200 overflow-hidden">
+                            <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0_0_0_/_0.08)] border border-gray-200 overflow-hidden">
                                 <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-4 text-white">
                                     <h3 className="text-lg font-black">Book Your Stay</h3>
                                     <p className="text-xs font-medium text-gray-300">Select rooms below to customize</p>
@@ -407,16 +407,16 @@ const HotelDetails = ({ setView }) => {
                                                     {rooms[0].originalPrice && rooms[0].originalPrice > rooms[0].price && (
                                                         <div className="text-sm text-gray-500 line-through font-medium">₹{rooms[0].originalPrice.toLocaleString()}</div>
                                                     )}
-                                                    <div className="text-2xl font-black text-gray-900">₹{rooms[0].price.toLocaleString()}</div>
+                                                    <div className="text-2xl font-black text-gray-900">₹{(rooms[0].finalPrice || rooms[0].price).toLocaleString()}</div>
                                                 </div>
                                                 <div className="text-right">
-                                                    {rooms[0].originalPrice && rooms[0].originalPrice > rooms[0].price && (
+                                                    {rooms[0].originalPrice && rooms[0].originalPrice > (rooms[0].finalPrice || rooms[0].price) && (
                                                         <div className="text-xs font-bold text-white bg-[#008234] px-2 py-1 rounded">
-                                                            {Math.round((1 - (rooms[0].price / rooms[0].originalPrice)) * 100)}% OFF
+                                                            {Math.round((1 - ((rooms[0].finalPrice || rooms[0].price) / rooms[0].originalPrice)) * 100)}% OFF
                                                         </div>
                                                     )}
-                                                    {rooms[0].taxes && <div className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest">+₹{rooms[0].taxes} taxes & fees</div>}
-                                                    {!rooms[0].taxes && <div className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest">Taxes & Fees Included</div>}
+                                                    {(rooms[0].pricing?.gst || rooms[0].taxes) && <div className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest">+₹{rooms[0].pricing?.gst || rooms[0].taxes} taxes & fees</div>}
+                                                    {!(rooms[0].pricing?.gst || rooms[0].taxes) && <div className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest">Taxes & Fees Included</div>}
                                                 </div>
                                             </div>
                                         </div>
@@ -447,9 +447,9 @@ const HotelDetails = ({ setView }) => {
                                         {hotel.address}<br />
                                         {hotel.city}, India
                                     </p>
-                                    <button 
+                                    <button
                                         onClick={() => {
-                                            const url = hotel.latitude && hotel.longitude 
+                                            const url = hotel.latitude && hotel.longitude
                                                 ? `https://www.google.com/maps?q=${hotel.latitude},${hotel.longitude}`
                                                 : `https://www.google.com/maps/search/${encodeURIComponent(hotel.hotelName + ' ' + hotel.city)}`;
                                             window.open(url, '_blank');
@@ -480,12 +480,12 @@ const HotelDetails = ({ setView }) => {
                             const bedType = room.bedType || 'King Bed';
                             const size = room.size || (room.capacity ? `${room.capacity * 100} sq.ft` : null);
                             const roomAmenities = room.amenities || [];
-                            
+
                             // Use dynamic availability if fetched, otherwise fallback to room.availableRooms
-                            const availableRooms = availability[room._id] !== undefined 
-                                ? availability[room._id] 
+                            const availableRooms = availability[room._id] !== undefined
+                                ? availability[room._id]
                                 : (room.availableRooms ?? room.totalRooms);
-                            
+
                             const isSoldOut = availableRooms <= 0;
 
 
@@ -532,14 +532,16 @@ const HotelDetails = ({ setView }) => {
                                                 {originalPrice && originalPrice > currentPrice && (
                                                     <div className="text-sm font-medium text-gray-500 line-through">₹{originalPrice.toLocaleString()}</div>
                                                 )}
-                                                <div className="text-2xl font-black text-gray-900">₹{currentPrice.toLocaleString()}</div>
-                                                <div className="text-[10px] text-gray-500 uppercase tracking-widest">+₹{taxes.toLocaleString()} taxes & fees</div>
+                                                <div className="text-2xl font-black text-gray-900">₹{(room.finalPrice || currentPrice).toLocaleString()}</div>
+                                                <div className="text-[10px] text-gray-500 uppercase tracking-widest">+₹{(room.pricing?.gst || taxes).toLocaleString()} taxes & fees</div>
+                                                {room.commission > 0 && <div className="text-[9px] font-bold text-emerald-600 mt-0.5">Includes Service Fee</div>}
                                                 <div className="text-xs font-medium text-gray-500 mt-1">Per Night</div>
                                             </div>
 
                                             <button
                                                 disabled={isSoldOut}
                                                 onClick={() => {
+                                                    console.log("Selecting Room:", room); // Requested logging
                                                     navigate(`/hotel-booking/${hotelId}`, {
                                                         state: {
                                                             hotel,
@@ -552,8 +554,8 @@ const HotelDetails = ({ setView }) => {
                                                     });
                                                 }}
                                                 className={`mt-6 w-full py-3 rounded-lg font-black text-sm uppercase tracking-widest transition-colors shadow-md ${isSoldOut
-                                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300'
-                                                        : 'bg-[#006ce4] hover:bg-blue-700 text-white shadow-blue-500/20'
+                                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300'
+                                                    : 'bg-[#006ce4] hover:bg-blue-700 text-white shadow-blue-500/20'
                                                     }`}
                                             >
                                                 {isSoldOut ? 'Sold Out' : 'Select Room'}

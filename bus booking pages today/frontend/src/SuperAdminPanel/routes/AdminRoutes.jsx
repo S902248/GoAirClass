@@ -27,6 +27,8 @@ import CancelReportView from '../pages/reports/CancelReportView';
 // Finance
 import WithdrawAmount from '../pages/finance/WithdrawAmount';
 import PaymentsSettingsView from '../pages/finance/PaymentsSettingsView';
+import CommissionManagement from '../pages/finance/CommissionManagement';
+import PricingSimulation from '../pages/finance/PricingSimulation';
 
 // Marketing
 import AdvertisementView from '../pages/marketing/AdvertisementView';
@@ -53,6 +55,21 @@ import AllFlights from '../pages/flights/AllFlights';
 import FlightBookings from '../pages/flights/FlightBookings';
 import FlightOffers from '../pages/flights/FlightOffers';
 import FlightSettings from '../pages/flights/FlightSettings';
+
+// Train
+import TrainDashboard from '../pages/train/TrainDashboard';
+import AllTrains from '../pages/train/AllTrains';
+import AddTrain from '../pages/train/AddTrain';
+import TrainRoutesSchedule from '../pages/train/TrainRoutes';
+import Stations from '../pages/train/Stations';
+import SeatCoachSetup from '../pages/train/SeatCoachSetup';
+import FareManagement from '../pages/train/FareManagement';
+import TrainBookings from '../pages/train/TrainBookings';
+import PNRManagement from '../pages/train/PNRManagement';
+import TrainReports from '../pages/train/TrainReports';
+import TrainAPISettings from '../pages/train/TrainAPISettings';
+import QuotaManagement from '../pages/train/QuotaManagement';
+
 
 
 const AdminRoutes = () => {
@@ -85,6 +102,8 @@ const AdminRoutes = () => {
                 {/* Finance */}
                 <Route path="finance/withdraw" element={<WithdrawAmount />} />
                 <Route path="finance/settings" element={<PaymentsSettingsView />} />
+                <Route path="finance/commission" element={<CommissionManagement />} />
+                <Route path="finance/pricing-simulation" element={<PricingSimulation />} />
 
                 {/* Marketing */}
                 <Route path="marketing/ads" element={<AdvertisementView />} />
@@ -111,6 +130,22 @@ const AdminRoutes = () => {
                 <Route path="flights/bookings" element={<FlightBookings />} />
                 <Route path="flights/offers" element={<FlightOffers />} />
                 <Route path="flights/settings" element={<FlightSettings />} />
+
+                {/* Train */}
+                <Route path="train/dashboard" element={<TrainDashboard />} />
+                <Route path="train/all" element={<AllTrains />} />
+                <Route path="train/add" element={<AddTrain />} />
+                <Route path="train/routes" element={<TrainRoutesSchedule />} />
+                <Route path="train/stations" element={<Stations />} />
+                <Route path="train/seat-coach" element={<SeatCoachSetup />} />
+                <Route path="train/fare" element={<FareManagement />} />
+                <Route path="train/bookings" element={<TrainBookings />} />
+                <Route path="train/pnr" element={<PNRManagement />} />
+                <Route path="train/api-settings" element={<TrainAPISettings />} />
+                <Route path="train/quota" element={<QuotaManagement />} />
+                <Route path="train/reports" element={<TrainReports />} />
+
+
 
                 {/* Placeholder for Settings (from sidebar) */}
                 <Route path="settings" element={<div className="p-6">Settings Page</div>} />

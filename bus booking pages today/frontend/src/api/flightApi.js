@@ -65,6 +65,14 @@ const flightApi = {
         const res = await Axios.get('/flight-bookings/user');
         return res.data;
     },
+    getBookingByPNR: async (pnr) => {
+        const res = await Axios.get(`/flight-bookings/pnr/${pnr}`);
+        return res.data;
+    },
+    updateBookingStatusByPNR: async (pnr, updates) => {
+        const res = await Axios.patch(`/flight-bookings/status/${pnr}`, updates);
+        return res.data;
+    },
 
     // Passengers
     getAllPassengers: async () => {

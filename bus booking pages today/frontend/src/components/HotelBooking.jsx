@@ -554,7 +554,7 @@ const HotelBooking = () => {
                         <div className="sticky top-32 space-y-4">
 
                             {/* Price Summary Card */}
-                            <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-200 overflow-hidden">
+                            <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0_0_0_/_0.08)] border border-gray-200 overflow-hidden">
                                 <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-5">
                                     <h3 className="text-base font-black">Price Summary</h3>
                                     <p className="text-xs text-gray-300 mt-0.5">{nights} Night{nights !== 1 ? 's' : ''} · {guests} Guest{guests !== 1 ? 's' : ''}</p>

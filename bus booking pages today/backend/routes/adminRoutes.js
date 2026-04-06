@@ -6,6 +6,7 @@ const Route = require('../models/Route');
 const Booking = require('../models/Booking');
 const mongoose = require('mongoose');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const stationController = require('../controllers/stationController');
 
 // ─── Helper: build scoped query filters based on admin role ───────────────────
 // superadmin → no filter (sees all)
@@ -160,5 +161,16 @@ router.get('/my-bookings', authMiddleware, async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
+
+// POST /api/admin/stations — strict explicitly superadmin protected
+router.post('/stations', authMiddleware, async (req, res, next) => {
+    if (req.user.role !== 'superadmin') {
+        return res.status(403).json({ success: false, error: 'Access denied. Super Admin only.' });
+    }
+    await stationController.addStation(req, res);
+});
+
+// GET /api/admin/stations — retrieve all active stations
+router.get('/stations', authMiddleware, stationController.getStations);
 
 module.exports = router;

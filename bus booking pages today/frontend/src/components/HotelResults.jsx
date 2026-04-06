@@ -71,7 +71,7 @@ const HotelResults = ({ setView }) => {
 
             {/* --- Floating Search Header --- */}
             <div className="sticky top-16 z-40 w-full px-4 sm:px-8 pt-6 pb-2 backdrop-blur-md">
-                <div className="max-w-7xl mx-auto bg-white/80 backdrop-blur-xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                <div className="max-w-7xl mx-auto bg-white/80 backdrop-blur-xl border border-white/60 shadow-[0_8px_30px_rgb(0_0_0_/_0.04)] rounded-[2rem] px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 transition-all hover:shadow-[0_8px_30px_rgb(0_0_0_/_0.08)]">
                     <div className="flex flex-wrap items-center gap-6 divide-x divide-gray-200/50 w-full md:w-auto">
                         <div className="flex items-center gap-4">
                             <div className="bg-gradient-to-br from-red-50 to-rose-50 p-3 rounded-2xl shadow-inner">
@@ -108,7 +108,7 @@ const HotelResults = ({ setView }) => {
 
                 {/* --- Elegant Filters Sidebar --- */}
                 <aside className="w-full lg:w-[320px] flex-shrink-0">
-                    <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 sticky top-48">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-[0_8px_30px_rgb(0_0_0_/_0.04)] border border-white/60 sticky top-48">
                         <div className="flex items-center justify-between mb-10">
                             <h3 className="font-black text-xl text-gray-900 tracking-tight flex items-center gap-2">
                                 <Filter className="h-5 w-5 text-[#d84e55]" />
@@ -184,7 +184,7 @@ const HotelResults = ({ setView }) => {
                 {/* --- Main Results Area --- */}
                 <main className="flex-1 space-y-6">
                     {/* Sophisticated Sorting Tabs */}
-                    <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] p-2 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/60 flex gap-2 overflow-x-auto no-scrollbar relative z-10">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] p-2 shadow-[0_4px_20px_rgb(0_0_0_/_0.03)] border border-white/60 flex gap-2 overflow-x-auto no-scrollbar relative z-10">
                         {['Recommended', 'Price: Low to High', 'Price: High to Low', 'Rating'].map(tab => (
                             <button
                                 key={tab}
@@ -210,7 +210,7 @@ const HotelResults = ({ setView }) => {
                                 <p className="mt-6 text-xs font-black text-gray-400 uppercase tracking-widest animate-pulse">Curating best properties...</p>
                             </div>
                         ) : filteredHotels.length === 0 ? (
-                            <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-16 text-center border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center justify-center min-h-[400px]">
+                            <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-16 text-center border border-white/60 shadow-[0_8px_30px_rgb(0_0_0_/_0.04)] flex flex-col items-center justify-center min-h-[400px]">
                                 <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
                                     <Search className="h-10 w-10 text-gray-300" />
                                 </div>
@@ -230,7 +230,7 @@ const HotelResults = ({ setView }) => {
                             return (
                                 <div key={hotel._id}
                                     onClick={() => navigate(`/hotel/${hotel._id}`, { state: { ...location.state, hotel } })}
-                                    className="bg-white rounded-xl p-3 border border-[#006ce4]/30 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 group flex flex-col lg:flex-row gap-4 animate-in fade-in slide-in-from-bottom-8 fill-mode-both relative cursor-pointer"
+                                    className="bg-white rounded-xl p-3 border border-[#006ce4]/30 shadow-sm hover:shadow-[0_8px_30px_rgb(0_0_0_/_0.08)] transition-all duration-300 group flex flex-col lg:flex-row gap-4 animate-in fade-in slide-in-from-bottom-8 fill-mode-both relative cursor-pointer"
                                     style={{ animationDelay: `${index * 100}ms` }}
                                 >
                                     {/* Left Section: Images */}
@@ -355,14 +355,34 @@ const HotelResults = ({ setView }) => {
                                             )}
                                         </div>
 
-                                        <div className="flex flex-col items-end">
+                                        <div className="flex flex-col items-end text-right">
                                             {startingPrice != null ? (
                                                 <>
                                                     <div className="text-[11px] font-medium text-gray-500 mb-0.5">Starting from</div>
-                                                    <div className="text-[24px] font-black text-[#1a1a1a] tracking-tight leading-none">₹{startingPrice.toLocaleString('en-IN')}</div>
-                                                    <div className="text-[11px] text-[#777] text-right mt-1">
-                                                        +₹{Math.round(startingPrice * 0.18).toLocaleString('en-IN')} taxes & fees<br />per night
-                                                    </div>
+                                                    {hotel.pricing ? (
+                                                        <>
+                                                            <div className="text-[24px] font-black text-[#1a1a1a] tracking-tight leading-none">
+                                                                ₹{hotel.pricing.totalFare.toLocaleString('en-IN')}
+                                                            </div>
+                                                            <div className="text-[11px] text-[#777] text-right mt-1">
+                                                                +₹{hotel.pricing.gst.toLocaleString('en-IN')} taxes & fees<br />per night
+                                                            </div>
+                                                            {hotel.pricing.commission > 0 && (
+                                                                <div className="text-[9px] font-bold text-emerald-600 uppercase tracking-tighter mt-1">
+                                                                    Includes Yield Commission
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className="text-[24px] font-black text-[#1a1a1a] tracking-tight leading-none">
+                                                                ₹{startingPrice.toLocaleString('en-IN')}
+                                                            </div>
+                                                            <div className="text-[11px] text-[#777] text-right mt-1">
+                                                                +₹{Math.round(startingPrice * 0.18).toLocaleString('en-IN')} taxes & fees<br />per night
+                                                            </div>
+                                                        </>
+                                                    )}
                                                 </>
                                             ) : (
                                                 <div className="text-[14px] font-bold text-gray-500">Price not available</div>

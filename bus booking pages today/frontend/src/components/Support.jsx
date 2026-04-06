@@ -96,7 +96,7 @@ const Support = () => {
                         return (
                             <div key={idx} className="group relative">
                                 <div className={`absolute inset-0 bg-white/40 blur-xl rounded-[40px] group-hover:${method.glow} transition-all duration-700`} />
-                                <div className="relative bg-white/40 backdrop-blur-xl p-10 rounded-[40px] border border-white/60 shadow-[0_20px_50px_rgba(0,0,0,0.03)] hover:-translate-y-3 transition-all duration-500 overflow-hidden h-full flex flex-col">
+                                <div className="relative bg-white/40 backdrop-blur-xl p-10 rounded-[40px] border border-white/60 shadow-[0_20px_50px_rgba(0_0_0_/_0.03)] hover:-translate-y-3 transition-all duration-500 overflow-hidden h-full flex flex-col">
                                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                         <Icon className="h-24 w-24 -rotate-12 translate-x-8 -translate-y-4" />
                                     </div>

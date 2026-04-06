@@ -1,10 +1,50 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Tag, Copy, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { getActiveCoupons } from '../api/couponApi';
 
 const Offers = () => {
     const scrollRef = useRef(null);
     const [scrollProgress, setScrollProgress] = useState(0);
     const [copiedId, setCopiedId] = useState(null);
+    const [dynamicOffers, setDynamicOffers] = useState([]);
+
+    useEffect(() => {
+        const fetchCoupons = async () => {
+            try {
+                const data = await getActiveCoupons();
+                const coupons = data.coupons || data || [];
+                
+                const mapped = coupons.map((c, index) => {
+                    const gradients = [
+                        "from-indigo-600 to-blue-700",
+                        "from-rose-500 to-orange-500",
+                        "from-emerald-500 to-teal-700",
+                        "from-violet-600 to-purple-800",
+                        "from-amber-400 to-orange-600"
+                    ];
+                    const accents = ["bg-white/40", "bg-white/40", "bg-white/40", "bg-white/40", "bg-white/40"];
+                    const icons = ["🚌", "✨", "🔄", "👩", "💳"];
+
+                    return {
+                        id: c._id,
+                        title: c.discountType === 'flat' 
+                            ? `FLAT ₹${c.discountValue} OFF!` 
+                            : `GET ${c.discountValue}% OFF!`,
+                        desc: c.description || "Special offer on your next booking.",
+                        code: c.code,
+                        validity: c.validTill ? `Valid till ${new Date(c.validTill).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : "Limited period",
+                        bgGradient: gradients[index % gradients.length],
+                        accent: accents[index % accents.length],
+                        icon: icons[index % icons.length]
+                    };
+                });
+                setDynamicOffers(mapped);
+            } catch (err) {
+                console.error("Failed to fetch offers", err);
+            }
+        };
+        fetchCoupons();
+    }, []);
 
     const handleScroll = () => {
         if (scrollRef.current) {
@@ -29,58 +69,30 @@ const Offers = () => {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    const offers = [
+    const staticOffers = [
         {
-            id: 1,
+            id: 's1',
             title: "CASHBACK UP TO ₹300!",
             desc: "On bus tickets. Min. value ₹200.",
             code: "FIRST300",
             validity: "Valid till 28 Feb",
-            bgGradient: "from-orange-50 to-orange-100",
+            bgGradient: "from-indigo-600 to-blue-700",
             icon: "🚌",
-            accent: "bg-orange-500"
+            accent: "bg-white/30"
         },
         {
-            id: 2,
+            id: 's2',
             title: "FLAT 15% OFF",
             desc: "For your first luxury booking.",
             code: "LUXURY15",
             validity: "Valid till 31 Mar",
-            bgGradient: "from-blue-50 to-blue-100",
+            bgGradient: "from-rose-500 to-orange-500",
             icon: "✨",
-            accent: "bg-blue-600"
-        },
-        {
-            id: 3,
-            title: "₹100 INSTANT OFF",
-            desc: "On round trips above ₹500.",
-            code: "ROUND100",
-            validity: "Valid till 15 Mar",
-            bgGradient: "from-rose-50 to-rose-100",
-            icon: "🔄",
-            accent: "bg-rose-500"
-        },
-        {
-            id: 4,
-            title: "0 CONVENIENCE FEE",
-            desc: "For women travelers on special buses.",
-            code: "GOFEMALE",
-            validity: "Limited period",
-            bgGradient: "from-purple-50 to-purple-100",
-            icon: "👩",
-            accent: "bg-purple-600"
-        },
-        {
-            id: 5,
-            title: "EXTRA ₹50 OFF",
-            desc: "Use Amazon Pay for transaction.",
-            code: "AMAZON50",
-            validity: "Valid till 10 Mar",
-            bgGradient: "from-emerald-50 to-emerald-100",
-            icon: "💳",
-            accent: "bg-emerald-500"
+            accent: "bg-white/30"
         }
     ];
+
+    const allOffers = [...dynamicOffers, ...staticOffers];
 
     return (
         <section className="py-12 bg-white overflow-hidden">
@@ -99,13 +111,13 @@ const Offers = () => {
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => scroll('left')}
-                            className="w-12 h-12 rounded-full bg-white border-2 border-gray-50 flex items-center justify-center text-deep-navy shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:bg-radiant-coral hover:text-white hover:border-radiant-coral hover:shadow-lg hover:shadow-radiant-coral/20 transition-all duration-300 active:scale-90 group"
+                            className="w-12 h-12 rounded-full bg-white border-2 border-gray-50 flex items-center justify-center text-deep-navy shadow-[0_4px_20px_rgba(0_0_0_/_0.06)] hover:bg-radiant-coral hover:text-white hover:border-radiant-coral hover:shadow-lg hover:shadow-radiant-coral/20 transition-all duration-300 active:scale-90 group"
                         >
                             <ChevronLeft className="h-6 w-6 group-hover:-translate-x-0.5 transition-transform" />
                         </button>
                         <button
                             onClick={() => scroll('right')}
-                            className="w-12 h-12 rounded-full bg-white border-2 border-gray-50 flex items-center justify-center text-deep-navy shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:bg-radiant-coral hover:text-white hover:border-radiant-coral hover:shadow-lg hover:shadow-radiant-coral/20 transition-all duration-300 active:scale-90 group"
+                            className="w-12 h-12 rounded-full bg-white border-2 border-gray-50 flex items-center justify-center text-deep-navy shadow-[0_4px_20px_rgba(0_0_0_/_0.06)] hover:bg-radiant-coral hover:text-white hover:border-radiant-coral hover:shadow-lg hover:shadow-radiant-coral/20 transition-all duration-300 active:scale-90 group"
                         >
                             <ChevronRight className="h-6 w-6 group-hover:translate-x-0.5 transition-transform" />
                         </button>
@@ -117,23 +129,23 @@ const Offers = () => {
                     onScroll={handleScroll}
                     className="flex gap-6 overflow-x-auto pb-4 hide-scrollbar -mx-8 px-8 scroll-smooth"
                 >
-                    {offers.map((offer) => (
+                    {allOffers.map((offer, index) => (
                         <div
-                            key={offer.id}
-                            className={`flex-shrink-0 w-[350px] h-[200px] rounded-[32px] bg-gradient-to-br ${offer.bgGradient} border border-white p-8 flex flex-col justify-between shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group hover:shadow-xl transition-all duration-500 cursor-pointer`}
+                            key={offer.id || index}
+                            className={`flex-shrink-0 w-[350px] h-[200px] rounded-[32px] bg-gradient-to-br ${offer.bgGradient} border border-white/20 p-8 flex flex-col justify-between shadow-[0_12px_40px_rgba(0_0_0_/_0.15)] relative overflow-hidden group hover:shadow-2xl transition-all duration-500 cursor-pointer`}
                         >
                             <div className="relative z-10 space-y-3">
                                 <div className={`w-10 h-1 ${offer.accent} rounded-full mb-4`} />
-                                <h3 className="text-deep-navy font-black text-xl tracking-tight leading-tight">
+                                <h3 className="text-white font-black text-xl tracking-tight leading-tight">
                                     {offer.title}
                                 </h3>
-                                <p className="text-gray-600/70 text-sm font-bold max-w-[180px]">
+                                <p className="text-white/80 text-sm font-bold max-w-[180px]">
                                     {offer.desc}
                                 </p>
                             </div>
 
                             <div className="relative z-10 flex items-center justify-between">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">
                                     {offer.validity}
                                 </span>
                                 <button
@@ -141,14 +153,14 @@ const Offers = () => {
                                         e.stopPropagation();
                                         copyCode(offer.id, offer.code);
                                     }}
-                                    className="flex items-center gap-2.5 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight shadow-sm border border-transparent hover:border-radiant-coral transition-all group/btn"
+                                    className="flex items-center gap-2.5 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight shadow-sm border border-white/20 hover:bg-white/20 transition-all group/btn"
                                 >
-                                    <span className="text-gray-400">CODE:</span>
-                                    <span className="text-deep-navy group-hover/btn:text-radiant-coral transition-colors">{offer.code}</span>
+                                    <span className="text-white/50">CODE:</span>
+                                    <span className="text-white group-hover/btn:text-white transition-colors">{offer.code}</span>
                                     {copiedId === offer.id ? (
-                                        <Check className="h-3.5 w-3.5 text-green-500" />
+                                        <Check className="h-3.5 w-3.5 text-green-400" />
                                     ) : (
-                                        <Copy className="h-3.5 w-3.5 text-radiant-coral group-hover/btn:scale-110 transition-transform" />
+                                        <Copy className="h-3.5 w-3.5 text-white/60 group-hover/btn:scale-110 transition-transform" />
                                     )}
                                 </button>
                             </div>

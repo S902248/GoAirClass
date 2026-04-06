@@ -77,7 +77,7 @@ const PrimoSection = () => {
                             </button>
                         </div>
 
-                        <button className="w-full bg-radiant-coral text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-[0_15px_30px_-8px_rgba(244,63,94,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 group primo-button-sweep">
+                        <button className="w-full bg-radiant-coral text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-[0_15px_30px_-8px_rgba(244_63_94_/_0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 group primo-button-sweep">
                             <Sparkles className="h-4 w-4 group-hover:rotate-12 group-hover:scale-110 transition-transform" />
                             Book a Primo Bus
                         </button>

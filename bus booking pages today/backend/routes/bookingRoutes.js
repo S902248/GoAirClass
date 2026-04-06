@@ -2,9 +2,17 @@ const express = require('express');
 const router = express.Router();
 const Booking = require('../models/Booking');
 const Bus = require('../models/Bus');
+const Coupon = require('../models/Coupon');
 const { operatorAuthMiddleware } = require('../middleware/operatorAuthMiddleware');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const User = require('../models/User');
+
+const generatePNR = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let pnr = '';
+    for (let i = 0; i < 8; i++) pnr += chars.charAt(Math.floor(Math.random() * chars.length));
+    return pnr;
+};
 
 const formatDateToYYYYMMDD = (dateStr) => {
     if (!dateStr) return '';
@@ -36,7 +44,8 @@ router.post('/create', authMiddleware, async (req, res) => {
             // Fallback for previous checkout flows
             passengerName, passengerEmail, passengerMobile, passengers,
             routeId, scheduleId, travelDate, boardingPoint, droppingPoint,
-            seatNumbers, seatDetails, baseFare, gst, discount, totalFare, couponCode,
+            boarding, dropping,
+            seatNumbers, seatDetails, baseFare, commission, gst, discount, totalFare, couponCode,
             razorpayPaymentId, razorpayOrderId, razorpaySignature,
         } = req.body;
 
@@ -71,6 +80,7 @@ router.post('/create', authMiddleware, async (req, res) => {
                 if (!existingBooking.userId && req.user?.id) {
                     existingBooking.userId = req.user.id;
                 }
+                const wasPending = existingBooking.paymentStatus !== 'Completed';
                 existingBooking.paymentStatus = razorpayPaymentId ? 'Completed' : 'Pending';
                 existingBooking.razorpayPaymentId = razorpayPaymentId;
                 existingBooking.razorpayOrderId = razorpayOrderId;
@@ -80,17 +90,51 @@ router.post('/create', authMiddleware, async (req, res) => {
                 if (couponCode !== undefined) existingBooking.couponCode = couponCode;
                 if (discount !== undefined) existingBooking.discount = discount;
                 if (baseFare !== undefined) existingBooking.baseFare = baseFare;
+                if (commission !== undefined) existingBooking.commission = commission;
                 if (gst !== undefined) existingBooking.gst = gst;
                 if (totalFare !== undefined) existingBooking.totalFare = totalFare;
 
+                if (!existingBooking.pnrNumber) {
+                    let pnr = generatePNR();
+                    while (await Booking.findOne({ pnrNumber: pnr })) {
+                        pnr = generatePNR();
+                    }
+                    existingBooking.pnrNumber = pnr;
+                }
+
                 await existingBooking.save();
-                console.log('✅ Booking Updated Successfully:', existingBooking._id);
+                
+                // Increment coupon stats if payment just became Completed
+                if (wasPending && existingBooking.paymentStatus === 'Completed' && existingBooking.couponCode) {
+                    await Coupon.findOneAndUpdate(
+                        { code: existingBooking.couponCode.toString().toUpperCase().trim() },
+                        { 
+                            $inc: { 
+                                'analytics.totalTimesUsed': 1,
+                                'analytics.totalDiscountGiven': existingBooking.discount || 0,
+                                'analytics.revenueGenerated': existingBooking.totalFare || 0
+                            } 
+                        }
+                    );
+                    console.log(`📈 Coupon ${existingBooking.couponCode} usage incremented from update.`);
+                }
+                
+                console.log('✅ Booking Updated Successfully:', existingBooking._id, 'PNR:', existingBooking.pnrNumber);
                 return res.status(200).json({ success: true, booking: existingBooking, bookingId: existingBooking._id });
             }
         }
 
+        let pnrNumber = generatePNR();
+        let isUnique = false;
+        while (!isUnique) {
+            const existing = await Booking.findOne({ pnrNumber });
+            if (!existing) isUnique = true;
+            else pnrNumber = generatePNR();
+        }
+
         const booking = new Booking({
             userId: req.user?.id || userId || undefined,
+            pnrNumber,
             passengerName: effectiveName,
             passengerEmail: effectiveEmail,
             passengerMobile: effectivePhone,
@@ -102,10 +146,13 @@ router.post('/create', authMiddleware, async (req, res) => {
             travelDate: formatDateToYYYYMMDD(travelDate || journeyDate || ''),
             boardingPoint,
             droppingPoint,
+            boarding,
+            dropping,
             seatNumbers: seatNumbers || selectedSeats || [],
             seatDetails: seatDetails || [],
             seatNumber: Array.isArray(seatNumbers || selectedSeats) ? (seatNumbers || selectedSeats).join(', ') : ((seatNumbers || selectedSeats) || ''),
             baseFare: baseFare || 0,
+            commission: commission || 0,
             gst: gst || 0,
             discount: discount || 0,
             totalFare: totalFare || totalAmount || 0,
@@ -118,6 +165,22 @@ router.post('/create', authMiddleware, async (req, res) => {
         });
 
         await booking.save();
+        
+        // Increment coupon stats if newly created booking is Completed
+        if (booking.paymentStatus === 'Completed' && booking.couponCode) {
+            await Coupon.findOneAndUpdate(
+                { code: booking.couponCode.toString().toUpperCase().trim() },
+                { 
+                    $inc: { 
+                        'analytics.totalTimesUsed': 1,
+                        'analytics.totalDiscountGiven': booking.discount || 0,
+                        'analytics.revenueGenerated': booking.totalFare || 0
+                    } 
+                }
+            );
+            console.log(`📈 Coupon ${booking.couponCode} usage incremented from new creation.`);
+        }
+
         console.log('✅ Booking Saved Successfully:', booking._id);
         res.status(201).json({ success: true, booking, bookingId: booking._id });
     } catch (err) {
@@ -257,6 +320,24 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/bookings/pnr/:pnr
+ * Fetch single booking details by PNR
+ */
+router.get('/pnr/:pnr', async (req, res) => {
+    try {
+        const booking = await Booking.findOne({ pnrNumber: req.params.pnr })
+            .populate('bus route schedule');
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+        res.json({ success: true, booking });
+    } catch (err) {
+        console.error('Error fetching booking details by PNR:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
  * GET /api/bookings/:id
  * Fetch single booking details
  */
@@ -302,24 +383,35 @@ router.post('/cancel-ticket', authMiddleware, async (req, res) => {
         // Calculate Time Difference
         const now = new Date();
         // Assuming journey date is travelDate and departure time comes from schedule or boardingPoint
-        const travelParts = booking.travelDate.split('-');
-        const year = parseInt(travelParts[0]);
-        const month = parseInt(travelParts[1]) - 1;
-        const day = parseInt(travelParts[2]);
-
         // Extract time from boardingPoint or schedule
         let hour = 10, minute = 0; // fallback Default 10:00 AM
-        if (booking.schedule && booking.schedule.departureTime) {
-            const timeParts = booking.schedule.departureTime.split(':');
-            hour = parseInt(timeParts[0]);
-            minute = parseInt(timeParts[1]);
-        } else if (booking.boardingPoint) {
-            // attempt finding HH:MM
-            const match = booking.boardingPoint.match(/(\d{2}):(\d{2})/);
+        const timeStr = booking.schedule?.departureTime || (booking.boardingPoint?.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i)?.[0]);
+
+        if (timeStr) {
+            const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
             if (match) {
                 hour = parseInt(match[1]);
                 minute = parseInt(match[2]);
+                const ampm = match[3] ? match[3].toUpperCase() : null;
+
+                if (ampm === 'PM' && hour < 12) hour += 12;
+                if (ampm === 'AM' && hour === 12) hour = 0;
             }
+        }
+
+        // Robust Date Parsing
+        let year, month, day;
+        const parts = booking.travelDate.split(/[-/]/);
+        if (parts[0].length === 4) {
+            // YYYY-MM-DD
+            year = parseInt(parts[0]);
+            month = parseInt(parts[1]) - 1;
+            day = parseInt(parts[2]);
+        } else {
+            // DD-MM-YYYY
+            day = parseInt(parts[0]);
+            month = parseInt(parts[1]) - 1;
+            year = parseInt(parts[2]);
         }
 
         const departureDate = new Date(year, month, day, hour, minute, 0);

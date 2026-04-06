@@ -66,14 +66,15 @@ router.post('/login', async (req, res) => {
 // Public/Admin route to get operators with bus counts
 // - superadmin: sees ALL operators
 // - admin: sees only operators linked to their adminId
-router.get('/all', authMiddleware, async (req, res) => {
+router.get(['/all', '/'], authMiddleware, async (req, res) => {
     try {
         // Build match filter based on role
         const matchFilter = {};
         if (req.user.role === 'admin') {
-            matchFilter.adminId = require('mongoose').Types.ObjectId.createFromHexString
-                ? require('mongoose').Types.ObjectId.createFromHexString(req.user.id.toString())
-                : new (require('mongoose').Types.ObjectId)(req.user.id);
+            const mongoose = require('mongoose');
+            matchFilter.adminId = mongoose.Types.ObjectId.createFromHexString
+                ? mongoose.Types.ObjectId.createFromHexString(req.user.id.toString())
+                : new mongoose.Types.ObjectId(req.user.id);
         }
         // superadmin: no filter, matchFilter stays {}
 
@@ -117,31 +118,7 @@ router.put('/:id', operatorAuthMiddleware, async (req, res) => {
 });
 
 // Delete
-router.delete('/:id', async (req, res) => {
-    try {
-        await Operator.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Operator deleted' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Get Profile
-router.get('/profile', operatorAuthMiddleware, async (req, res) => {
-    try {
-        const operator = await Operator.findById(req.operator.id).select('-password');
-        if (!operator) {
-            return res.status(404).json({ error: 'Operator not found' });
-        }
-        res.json(operator);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-module.exports = router;
-// Delete
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         await Operator.findByIdAndDelete(req.params.id);
         res.json({ message: 'Operator deleted' });

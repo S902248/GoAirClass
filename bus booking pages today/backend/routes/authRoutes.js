@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getOtp, resendOtp, verifyOtp, loginWithOtp, verifyLoginOtp, getDashboardStats, submitAdminRequest, getAdminRequests, getAdminNotifications, updateAdminRequestStatus, adminLogin, getAllAdmins } = require('../controllers/authController');
+const { getOtp, resendOtp, verifyOtp, loginWithOtp, verifyLoginOtp, sendRegistrationOtp, verifyRegistrationOtp, getDashboardStats, submitAdminRequest, getAdminRequests, getAdminNotifications, updateAdminRequestStatus, adminLogin, getAllAdmins } = require('../controllers/authController');
 
 const { authMiddleware, checkRole } = require('../middleware/authMiddleware');
 
@@ -14,6 +14,10 @@ router.post('/login', loginWithOtp);
 router.post('/send-otp', getOtp);   // Re-adding for user requirement
 router.post('/resend-otp', resendOtp);
 router.post('/verify-login-otp', verifyLoginOtp);
+
+// --- New: Full Mobile + OTP Registration Flow ---
+router.post('/send-registration-otp', sendRegistrationOtp);
+router.post('/verify-registration-otp', verifyRegistrationOtp);
 
 // Protected Admin Routes
 router.get('/dashboard-stats', authMiddleware, checkRole(['admin', 'superadmin']), getDashboardStats);

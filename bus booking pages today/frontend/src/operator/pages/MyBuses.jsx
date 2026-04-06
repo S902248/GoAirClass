@@ -172,10 +172,16 @@ const MyBuses = () => {
                                         </td>
                                         <td className="px-8 py-6 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <button className="w-9 h-9 bg-gray-50 text-gray-400 rounded-xl flex items-center justify-center hover:bg-white hover:text-deep-navy hover:shadow-lg transition-all active:scale-90 border border-transparent hover:border-gray-100">
+                                                <button
+                                                    onClick={() => navigate(`/operator/buses/view/${bus._id}`)}
+                                                    title="View Bus Details"
+                                                    className="w-9 h-9 bg-gray-50 text-gray-400 rounded-xl flex items-center justify-center hover:bg-white hover:text-deep-navy hover:shadow-lg transition-all active:scale-90 border border-transparent hover:border-gray-100">
                                                     <Eye className="h-4 w-4" />
                                                 </button>
-                                                <button className="w-9 h-9 bg-gray-50 text-gray-400 rounded-xl flex items-center justify-center hover:bg-white hover:text-blue-500 hover:shadow-lg transition-all active:scale-90 border border-transparent hover:border-gray-100">
+                                                <button
+                                                    onClick={() => navigate(`/operator/buses/edit/${bus._id}`)}
+                                                    title="Edit Bus"
+                                                    className="w-9 h-9 bg-gray-50 text-gray-400 rounded-xl flex items-center justify-center hover:bg-white hover:text-blue-500 hover:shadow-lg transition-all active:scale-90 border border-transparent hover:border-gray-100">
                                                     <Edit className="h-4 w-4" />
                                                 </button>
                                                 <button

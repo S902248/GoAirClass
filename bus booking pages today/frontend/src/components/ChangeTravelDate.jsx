@@ -28,7 +28,7 @@ const ChangeTravelDate = () => {
                 </div>
 
                 {/* Main Card */}
-                <div className="w-full max-w-2xl bg-white rounded-[40px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.08)] border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-700">
+                <div className="w-full max-w-2xl bg-white rounded-[40px] shadow-[0_40px_100px_-20px_rgba(0_0_0_/_0.08)] border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-700">
 
                     {/* Header Bar */}
                     <div className="bg-gradient-to-r from-deep-navy to-[#1e1b4b] p-8 md:p-10 flex items-center gap-6">

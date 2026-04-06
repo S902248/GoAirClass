@@ -57,9 +57,48 @@ const scheduleCtrl = handleCRUD(Schedule);
 router.get('/schedules', scheduleCtrl.getAll);
 router.post('/schedules', scheduleCtrl.create);
 
+const Coupon = require('../models/Coupon');
+
 // Booking Routes
-const bookingCtrl = handleCRUD(Booking);
-router.get('/bookings', bookingCtrl.getAll);
-router.post('/bookings', bookingCtrl.create);
+router.get('/bookings', async (req, res) => {
+    try {
+        const data = await Booking.find().populate('bus route schedule');
+        res.json(data);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/bookings', async (req, res) => {
+    try {
+        const newItem = new Booking(req.body);
+        await newItem.save();
+        console.log(`✅ Booking saved ID: ${newItem._id}, Coupon applied: ${newItem.couponCode || 'None'}`);
+
+        // Increment coupon usage if a code was applied
+        if (newItem.couponCode && newItem.status === 'Confirmed') {
+            console.log(`🔄 Attempting to increment usage for coupon: ${newItem.couponCode}`);
+            const updateResult = await Coupon.findOneAndUpdate(
+                { code: newItem.couponCode.toString().toUpperCase().trim() },
+                { 
+                    $inc: { 
+                        'analytics.totalTimesUsed': 1,
+                        'analytics.totalDiscountGiven': newItem.discount || 0
+                    } 
+                },
+                { new: true }
+            );
+            
+            if (updateResult) {
+                console.log(`📈 Success: Coupon ${updateResult.code} usage is now ${updateResult.analytics.totalTimesUsed}`);
+            } else {
+                console.error(`❌ Failure: No active coupon found with code ${newItem.couponCode}`);
+            }
+        }
+
+        res.status(201).json({ success: true, booking: newItem });
+    } catch (err) { 
+        console.error('Error saving booking:', err);
+        res.status(400).json({ error: err.message }); 
+    }
+});
 
 module.exports = router;

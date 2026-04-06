@@ -55,4 +55,11 @@ Here is the list of all the API endpoints called from the frontend, categorized 
 - `POST /auth/get-otp` (Request OTP for login/verification)
 - `POST /auth/verify-otp` (Verify OTP)
 
-
+## `api/trainApi.js`
+- `GET /trains` (Fetch all trains)
+- `POST /trains` (Create new train)
+- `GET /trains/stats` (Get train dashboard stats)
+- `GET /trains/bookings` (Fetch all train bookings)
+- `POST /trains/book` (Book a train ticket)
+- `GET /trains/pnr/:pnr` (Search booking by PNR)
+- `GET /trains/availability` (Check seat availability)

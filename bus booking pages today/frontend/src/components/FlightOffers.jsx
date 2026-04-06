@@ -60,7 +60,7 @@ const FlightOffers = () => {
                             key={index}
                             className={`group perspective-1000 cursor-pointer`}
                         >
-                            <div className={`relative h-[320px] rounded-[40px] border border-gray-100 bg-gradient-to-br ${offer.gradient} p-8 flex flex-col justify-between transition-all duration-700 ease-out transform group-hover:rotate-x-1 group-hover:rotate-y-1 group-hover:scale-[1.02] group-hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] overflow-hidden`}>
+                            <div className={`relative h-[320px] rounded-[40px] border border-gray-100 bg-gradient-to-br ${offer.gradient} p-8 flex flex-col justify-between transition-all duration-700 ease-out transform group-hover:rotate-x-1 group-hover:rotate-y-1 group-hover:scale-[1.02] group-hover:shadow-[0_40px_80px_-20px_rgba(0_0_0_/_0.1)] overflow-hidden`}>
 
                                 {/* Ticket Perforation Effect */}
                                 <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white border border-gray-100 rounded-full z-20" />

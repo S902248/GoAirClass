@@ -58,7 +58,7 @@ const FlightReview = ({ flight, onNext }) => {
             </div>
 
             {/* Main Flight Card */}
-            <div className="bg-white rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden group">
+            <div className="bg-white rounded-[32px] shadow-[0_8px_30px_rgb(0_0_0_/_0.04)] border border-gray-100 overflow-hidden group">
                 <div className="p-8 md:p-10">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-gray-50">
                         <div className="flex items-center gap-4">
@@ -166,7 +166,7 @@ const FlightReview = ({ flight, onNext }) => {
                 <div className="relative pt-6 pb-2">
                     {/* Progress Bar Background */}
                     <div className="absolute top-[42px] inset-x-8 h-2 bg-gray-50 rounded-full overflow-hidden">
-                        <div className="h-full w-1/2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>
+                        <div className="h-full w-1/2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16_185_129_/_0.3)]"></div>
                     </div>
 
                     <div className="flex justify-between relative px-2">
@@ -221,7 +221,7 @@ const FlightReview = ({ flight, onNext }) => {
             <div className="sticky bottom-6 z-30">
                 <button 
                     onClick={onNext}
-                    className="w-full py-6 bg-gradient-to-r from-[#f26a36] to-[#ff7e4d] hover:shadow-[0_15px_40px_-10px_rgba(242,106,54,0.5)] text-white rounded-3xl font-black text-xl uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-4 relative overflow-hidden group border-b-4 border-orange-700"
+                    className="w-full py-6 bg-gradient-to-r from-[#f26a36] to-[#ff7e4d] hover:shadow-[0_15px_40px_-10px_rgba(242_106_54_/_0.5)] text-white rounded-3xl font-black text-xl uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-4 relative overflow-hidden group border-b-4 border-orange-700"
                 >
                     <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                     <span className="relative z-10 flex items-center gap-3">

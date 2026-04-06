@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: null,
     },
+    otpAttempts: {
+        type: Number,
+        default: 0,
+    },
     firstName: {
         type: String,
         trim: true,

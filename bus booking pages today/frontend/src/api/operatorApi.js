@@ -168,3 +168,17 @@ export const deleteHotelCoupon = async (id) => {
     catch (e) { handle(e); }
 };
 
+import Axios from './Axios';
+
+/** Super Admin - Get all operators with bus counts */
+export const getOperators = async () => {
+    try {
+        // Use the authenticated Axios instance
+        const res = await Axios.get('/operators');
+        return res.data;
+    } catch (e) {
+        // Fallback or handle error
+        throw e;
+    }
+};
+

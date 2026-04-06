@@ -28,6 +28,14 @@ import AddFlight from './pages/flights/AddFlight';
 import FlightBookings from './pages/flights/FlightBookings';
 import Passengers from './pages/flights/Passengers';
 
+// ── Train imports ──────────────────────────────────────────────────────────────
+import TrainDashboard from './pages/train/TrainDashboard';
+import TrainList from './pages/train/TrainList';
+import TrainBookings from './pages/train/TrainBookings';
+import SeatAvailability from './pages/train/SeatAvailability';
+import PNRSearch from './pages/train/PNRSearch';
+import TrainReports from './pages/train/TrainReports';
+
 const AdmineApp = ({ user, onLogout }) => {
     return (
         <Layout user={user} onLogout={onLogout}>
@@ -51,6 +59,14 @@ const AdmineApp = ({ user, onLogout }) => {
                 <Route path="/flights/add" element={<AddFlight />} />
                 <Route path="/flights/bookings" element={<FlightBookings />} />
                 <Route path="/flights/passengers" element={<Passengers />} />
+
+                {/* ── Train routes ── */}
+                <Route path="/train/dashboard" element={<TrainDashboard />} />
+                <Route path="/train/all" element={<TrainList />} />
+                <Route path="/train/bookings" element={<TrainBookings />} />
+                <Route path="/train/availability" element={<SeatAvailability />} />
+                <Route path="/train/pnr" element={<PNRSearch />} />
+                <Route path="/train/reports" element={<TrainReports />} />
 
                 {/* ── Hotel routes ── */}
                 <Route path="/hotels" element={<AllHotels />} />

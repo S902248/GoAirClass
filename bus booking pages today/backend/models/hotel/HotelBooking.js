@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const hotelBookingSchema = new mongoose.Schema({
+    bookingId: { type: String, unique: true },
     hotelId: { type: mongoose.Schema.Types.ObjectId, ref: 'Hotel', required: true },
     roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true },
     inventoryRoomId: { type: mongoose.Schema.Types.ObjectId, ref: 'RoomInventory' },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ChevronLeft, User, Phone, Mail, ShieldCheck, ArrowRight,
@@ -11,6 +11,12 @@ const PassengerDetails = ({ bus, seats, setView, setPassengers, searchParams }) 
     const navigate = useNavigate();
     // seats is now an array of objects: { id, label, type, price, ... }
     const [isTripDetailsOpen, setIsTripDetailsOpen] = useState(true);
+
+    // Women-only booking state — initialized from searchParams
+    const [isWomenOnly, setIsWomenOnly] = useState(
+        !!(searchParams?.womenBooking)
+    );
+
     const [localPassengers, setLocalPassengers] = useState(
         seats.map(seat => ({
             seatId: seat.id,
@@ -18,9 +24,18 @@ const PassengerDetails = ({ bus, seats, setView, setPassengers, searchParams }) 
             seatType: seat.type,
             name: '',
             age: seat.type === 'senior' ? '65' : '',
-            gender: seat.type === 'women' ? 'Female' : 'Male'
+            gender: (searchParams?.womenBooking || seat.type === 'women') ? 'Female' : 'Male'
         }))
     );
+
+    // When the toggle is switched ON, force all passengers to Female
+    useEffect(() => {
+        if (isWomenOnly) {
+            setLocalPassengers(prev =>
+                prev.map(p => ({ ...p, gender: 'Female' }))
+            );
+        }
+    }, [isWomenOnly]);
 
     const [contact, setContact] = useState({
         email: '',
@@ -47,6 +62,15 @@ const PassengerDetails = ({ bus, seats, setView, setPassengers, searchParams }) 
         if (!isAllPassengersFilled) {
             alert('Please fill in all passenger details.');
             return;
+        }
+
+        // Women-only validation — backend mirrors this rule
+        if (isWomenOnly) {
+            const hasNonFemale = localPassengers.some(p => p.gender !== 'Female');
+            if (hasNonFemale) {
+                alert('Only female passengers allowed for this booking.');
+                return;
+            }
         }
 
         if (!contact.email || contact.phone.length !== 10) {
@@ -103,9 +127,11 @@ const PassengerDetails = ({ bus, seats, setView, setPassengers, searchParams }) 
     };
 
     // Calculate fare based on individual seat prices from the selection
-    const baseFare = seats.reduce((acc, seat) => acc + (seat.price || bus?.price || 1000), 0);
-    const taxes = Math.round(baseFare * 0.05); // 5% GST
-    const totalAmount = baseFare + taxes;
+    const totalBaseFare = seats.reduce((acc, seat) => acc + (seat.basePrice || bus?.baseFare || 1000), 0);
+    const totalCommission = seats.reduce((acc, seat) => acc + (seat.commission || bus?.commissionApplied || 0), 0);
+    const activePrice = totalBaseFare + totalCommission;
+    const taxes = Math.round(activePrice * 0.05); // 5% GST
+    const totalAmount = activePrice + taxes;
 
     return (
         <div className="pt-28 pb-20 min-h-screen bg-[#f3f4f9]">
@@ -233,12 +259,54 @@ const PassengerDetails = ({ bus, seats, setView, setPassengers, searchParams }) 
 
                         {/* Passenger Details Section */}
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="px-6 py-5 flex items-center gap-3 border-b border-gray-50">
-                                <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
-                                    <User className="h-4 w-4" />
+                            {/* Section Header with Women-Only Toggle */}
+                            <div className="px-6 py-5 flex items-center justify-between border-b border-gray-50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
+                                        <User className="h-4 w-4" />
+                                    </div>
+                                    <h3 className="text-sm font-black text-deep-navy uppercase tracking-widest">Passenger Details</h3>
                                 </div>
-                                <h3 className="text-sm font-black text-deep-navy uppercase tracking-widest">Passenger Details</h3>
+
+                                {/* Women-Only Booking Toggle */}
+                                <label className="flex items-center gap-3 cursor-pointer group select-none">
+                                    <div className="text-right hidden sm:block">
+                                        <span className="text-[12px] font-bold text-gray-800 block">Booking for Women</span>
+                                        <span className="text-[10px] font-bold text-[#108ece] group-hover:underline">
+                                            {isWomenOnly ? 'Women-only seats' : 'Know more'}
+                                        </span>
+                                    </div>
+                                    <div className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={isWomenOnly}
+                                            onChange={() => setIsWomenOnly(prev => !prev)}
+                                        />
+                                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer
+                                            peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full
+                                            peer-checked:after:border-white
+                                            after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                                            after:bg-white after:border-gray-300 after:border after:rounded-full
+                                            after:h-5 after:w-5 after:transition-all
+                                            peer-checked:bg-[#D84E55] transition-colors duration-300"
+                                        />
+                                    </div>
+                                </label>
                             </div>
+
+                            {/* Women-Only Helper Banner */}
+                            {isWomenOnly && (
+                                <div className="mx-6 mt-4 flex items-center gap-3 px-4 py-3 bg-pink-50 border border-pink-200 rounded-2xl animate-pulse-once">
+                                    <div className="w-7 h-7 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0">
+                                        <Info className="h-4 w-4 text-pink-500" />
+                                    </div>
+                                    <p className="text-[11px] font-bold text-pink-700">
+                                        Only female passengers allowed for this booking. Male option is disabled.
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="p-8 space-y-12">
                                 <p className="text-[10px] font-bold text-gray-400 uppercase mb-4">Please enter details as per Govt. ID for smooth boarding.</p>
 
@@ -286,19 +354,38 @@ const PassengerDetails = ({ bus, seats, setView, setPassengers, searchParams }) 
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Gender</label>
-                                                <div className="flex bg-white rounded-2xl p-1 border border-gray-100 shadow-sm">
-                                                    {['Male', 'Female'].map(g => (
-                                                        <button
-                                                            key={g}
-                                                            type="button"
-                                                            onClick={() => handlePassengerChange(idx, 'gender', g)}
-                                                            className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
-                                                                ${p.gender === g ? 'bg-radiant-coral shadow-md text-white' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}
-                                                            `}
-                                                        >
-                                                            {g}
-                                                        </button>
-                                                    ))}
+                                                <div className={`flex rounded-2xl p-1 border shadow-sm transition-colors duration-300
+                                                    ${isWomenOnly ? 'bg-pink-50 border-pink-200' : 'bg-white border-gray-100'}`}>
+                                                    {/* Male — disabled when isWomenOnly */}
+                                                    <button
+                                                        type="button"
+                                                        disabled={isWomenOnly}
+                                                        onClick={() => !isWomenOnly && handlePassengerChange(idx, 'gender', 'Male')}
+                                                        title={isWomenOnly ? 'Not available for women-only booking' : ''}
+                                                        className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300
+                                                            ${p.gender === 'Male' && !isWomenOnly
+                                                                ? 'bg-radiant-coral shadow-md text-white'
+                                                                : isWomenOnly
+                                                                    ? 'text-gray-300 cursor-not-allowed bg-gray-100/60'
+                                                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                                            }`}
+                                                    >
+                                                        Male
+                                                    </button>
+                                                    {/* Female — always enabled, highlighted when isWomenOnly */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handlePassengerChange(idx, 'gender', 'Female')}
+                                                        className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300
+                                                            ${p.gender === 'Female'
+                                                                ? isWomenOnly
+                                                                    ? 'bg-[#D84E55] shadow-lg shadow-pink-300/60 text-white scale-[1.03]'
+                                                                    : 'bg-radiant-coral shadow-md text-white'
+                                                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                                            }`}
+                                                    >
+                                                        Female
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -373,7 +460,11 @@ const PassengerDetails = ({ bus, seats, setView, setPassengers, searchParams }) 
                                 <div className="space-y-5 mb-10">
                                     <div className="flex justify-between items-center text-[11px] font-black text-gray-400 uppercase tracking-widest">
                                         <span>Base Fare</span>
-                                        <span className="text-deep-navy">₹{baseFare}</span>
+                                        <span className="text-deep-navy">₹{totalBaseFare}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                                        <span>Platform Fee</span>
+                                        <span className="text-deep-navy">₹{totalCommission}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-[11px] font-black text-gray-400 uppercase tracking-widest">
                                         <span>Taxes & GST (5%)</span>

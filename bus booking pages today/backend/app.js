@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const cron = require("node-cron");
+const Coupon = require("./models/Coupon");
 
 const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -12,6 +14,14 @@ const bookingRoutes = require("./routes/bookingRoutes");
 const cityRoutes = require("./routes/cityRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const trainRoutes = require("./routes/trainRoutes");
+const superAdminTrainRoutes = require("./routes/superAdminTrainRoutes");
+const coachRoutes = require("./routes/coachRoutes");
+const commissionRoutes = require("./routes/commissionRoutes");
+const pricingRoutes = require("./routes/pricingRoutes");
+const assetRoutes = require("./routes/assetRoutes");
+const adRoutes = require("./routes/adRoutes");
+const bannerRoutes = require("./routes/bannerRoutes");
 
 // Hotel module routes
 const hotelRoutes = require('./routes/hotel/hotelRoutes');
@@ -68,6 +78,11 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/cities", cityRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/train", superAdminTrainRoutes);
+app.use("/api/trains", trainRoutes);
+app.use("/api/train-bookings", trainRoutes);
+app.use("/api/pnr", trainRoutes);
+app.use("/api", coachRoutes);
 
 // Hotel module
 app.use('/api/hotels', hotelRoutes);
@@ -96,9 +111,30 @@ app.use('/api/passengers', passengerRoutes);
 app.use('/api/seats', flightSeatRoutes);
 app.use('/api/flight-payments', flightPaymentRoutes);
 app.use('/api/tickets', flightTicketRoutes);
+app.use('/api/commission', commissionRoutes);
+app.use('/api/pricing', pricingRoutes);
+app.use('/api/assets', assetRoutes);
+app.use('/api/ads', adRoutes);
+app.use('/api/banner', bannerRoutes);
+app.use('/uploads/banners', require('express').static('uploads/banners'));
 
 app.get("/", (req, res) => {
     res.send("API Working...");
+});
+
+// Auto Expire Coupons Cron Job (Runs every hour)
+cron.schedule("0 * * * *", async () => {
+    try {
+        const result = await Coupon.updateMany(
+            { validTill: { $lt: new Date() }, status: "Active" },
+            { status: "Expired" }
+        );
+        if (result.modifiedCount > 0) {
+            console.log(`[Cron] Expired ${result.modifiedCount} coupons.`);
+        }
+    } catch (err) {
+        console.error("[Cron] Error expiring coupons:", err);
+    }
 });
 
 module.exports = app;

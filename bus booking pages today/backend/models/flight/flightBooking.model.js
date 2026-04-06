@@ -102,6 +102,17 @@ const flightBookingSchema = new mongoose.Schema({
         enum: ['NOT_CHECKED_IN', 'CHECKED_IN'],
         default: 'NOT_CHECKED_IN'
     },
+    cancellationDetails: {
+        isCancelled: { type: Boolean, default: false },
+        cancelledAt: { type: Date },
+        refundAmount: { type: Number, default: 0 },
+        cancellationCharges: { type: Number, default: 0 },
+        refundStatus: {
+            type: String,
+            enum: ['PENDING', 'PROCESSED', 'FAILED', 'NOT_APPLICABLE'],
+            default: 'NOT_APPLICABLE'
+        }
+    },
     bookingSource: {
         type: String,
         default: 'WEB'

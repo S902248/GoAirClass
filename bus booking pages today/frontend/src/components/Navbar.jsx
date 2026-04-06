@@ -32,6 +32,9 @@ const Navbar = ({ setView, activeTab, setActiveTab, isHome, isLoggedIn, user, on
                 <div onClick={() => setView('offers-page')} className="flex items-center gap-1.5 hover:text-[#f26a36] cursor-pointer uppercase">
                     <Tag className="h-3 w-3" /> Offers
                 </div>
+                <div onClick={() => setView('my-bookings')} className="flex items-center gap-1.5 hover:text-[#f26a36] cursor-pointer uppercase text-[#f26a36] font-black">
+                    <Ticket className="h-3 w-3" /> My Bookings
+                </div>
                 <div onClick={() => setView('track-ticket')} className="flex items-center gap-1.5 hover:text-[#f26a36] cursor-pointer uppercase">
                     <Ticket className="h-3 w-3" /> Track Ticket
                 </div>
@@ -156,6 +159,15 @@ const Navbar = ({ setView, activeTab, setActiveTab, isHome, isLoggedIn, user, on
                                             <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">My Profile</span>
                                         </button>
                                         <button
+                                            onClick={() => { setView('my-bookings'); setIsProfileOpen(false); }}
+                                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all rounded-xl group/item"
+                                        >
+                                            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center group-hover/item:bg-orange-100 transition-colors">
+                                                <Ticket className="h-4 w-4 text-[#f26a36]" />
+                                            </div>
+                                            <span className="text-[11px] font-black text-gray-600 uppercase tracking-widest">My Bookings</span>
+                                        </button>
+                                        <button
                                             onClick={() => { navigate('/admin-request'); setIsProfileOpen(false); }}
                                             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all rounded-xl group/item"
                                         >
@@ -248,6 +260,7 @@ const Navbar = ({ setView, activeTab, setActiveTab, isHome, isLoggedIn, user, on
                                 ) : (
                                     <button onClick={() => { onSignIn(); setIsMobileMenuOpen(false); }} className="hover:text-[#f26a36]">LOGIN</button>
                                 )}
+                                <button onClick={() => { setView('my-bookings'); setIsMobileMenuOpen(false); }} className="hover:text-[#f26a36]">MY BOOKINGS</button>
                                 <button onClick={() => { setView('support'); setIsMobileMenuOpen(false); }} className="hover:text-[#f26a36]">SUPPORT</button>
                             </div>
 

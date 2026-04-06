@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
     Clock, Star, MapPin, ChevronRight, Filter, SortAsc, Info,
     Wifi, Power, Coffee, Tv, ShieldCheck, MapPin as MapPinIcon,
@@ -10,10 +11,11 @@ import SeatSelectionOverlay from './SeatSelectionOverlay';
 import BoardingPointMap from './BoardingPointMap';
 import { searchSchedules } from '../api/scheduleApi';
 import { searchCities } from '../api/cityApi';
-import { validateCoupon, getActiveCoupons } from '../api/couponApi';
+import { validateCoupon, getActiveCoupons, getBusCoupons } from '../api/couponApi';
 import WomenBookingToggle from './WomenBookingToggle';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import AdCarousel from './ads/AdCarousel';
 
 // Haversine formula to calculate distance between two coordinates in km
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -50,12 +52,38 @@ const dates = [
     { day: "Thu", date: "26 Feb", price: "750" },
 ];
 
+const BusCouponBadge = ({ busId }) => {
+    const [coupons, setCoupons] = useState([]);
+
+    useEffect(() => {
+        if (busId) {
+            getBusCoupons(busId)
+                .then(setCoupons)
+                .catch(err => console.error("Error fetching coupons for bus", busId, err));
+        }
+    }, [busId]);
+
+    if (coupons.length === 0) return null;
+
+    return (
+        <div className="mt-2 space-y-2">
+            {coupons.map((coupon) => (
+                <div key={coupon._id} className="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-100 flex items-center gap-2 group hover:bg-emerald-100 transition-colors">
+                    <Tag className="h-3 w-3 text-emerald-500" />
+                    <span>🎉 SAVE {coupon.discountType === 'flat' ? `₹${coupon.discountValue}` : `${coupon.discountValue}%`} with code <span className="text-emerald-900">{coupon.code}</span></span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, setSelectedSeats, setBusBookingData, isLoggedIn, triggerLogin, onOverlayToggle }) => {
     const navigate = useNavigate();
     const [buses, setBuses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeCoupons, setActiveCoupons] = useState([]);
     const [userLocation, setUserLocation] = useState(null);
+    const [inlineAds, setInlineAds] = useState([]);
 
     // Geolocation detection
     useEffect(() => {
@@ -238,7 +266,10 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
                 arrival: s.arrivalTime,
                 arrivalPoint: s.route?.toCity || searchParams.toCity,
                 duration: calculateDuration(s.departureTime, s.arrivalTime),
-                price: s.ticketPrice,
+                price: s.finalPrice || s.ticketPrice,
+                baseFare: s.baseFare || s.ticketPrice,
+                commissionApplied: s.commission || 0,
+                finalPrice: s.finalPrice || s.ticketPrice,
                 rating: 4.5 + (Math.random() * 0.5),
                 reviews: 100 + Math.floor(Math.random() * 1000),
                 seatsLeft: s.availableSeats || 40,
@@ -350,7 +381,18 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
         setLocalTo(searchParams?.toCity || "");
         setLocalDate(getInitialDateValue(searchParams?.date));
         setLocalWomenBooking(searchParams?.womenBooking || false);
+        fetchInlineAds();
     }, [searchParams]);
+
+    const fetchInlineAds = async () => {
+        try {
+            const device = window.innerWidth < 768 ? 'Mobile' : 'Desktop';
+            const res = await axios.get(`/api/ads?position=SearchInline&source=${searchParams?.fromCity}&destination=${searchParams?.toCity}&device=${device}`);
+            if (res.data.success) setInlineAds(res.data.ads);
+        } catch (err) {
+            console.error("Error fetching inline ads", err);
+        }
+    };
 
     const [expandedFilters, setExpandedFilters] = useState({
         boarding: true,
@@ -496,7 +538,7 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
                     <div className="max-w-[1240px] mx-auto px-4 pt-32 pb-12">
                         <div className="flex items-center gap-6">
                             {/* Search Bar Container */}
-                            <div className="flex-1 flex items-center bg-white border border-gray-100 rounded-[24px] h-[84px] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
+                            <div className="flex-1 flex items-center bg-white border border-gray-100 rounded-[24px] h-[84px] shadow-[0_2px_15px_-3px_rgba(0_0_0_/_0.07)]">
                                 {/* FROM */}
                                 <div className="suggestion-container flex-1 flex items-center px-8 relative hover:bg-gray-50/50 transition-colors h-full rounded-l-[24px]">
                                     <Bus className="h-7 w-7 text-gray-800 flex-shrink-0" />
@@ -513,7 +555,7 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
 
                                         {/* From Suggestions Dropdown */}
                                         {showFromSuggestions && (
-                                            <div className="absolute top-[calc(100%+8px)] left-0 w-[300px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-100 z-[100] max-h-[300px] overflow-y-auto overflow-x-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <div className="absolute top-[calc(100%+8px)] left-0 w-[300px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0_0_0_/_0.15)] border border-slate-100 z-[100] max-h-[300px] overflow-y-auto overflow-x-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                                                 {fromSuggestions.map((city) => (
                                                     <div
                                                         key={city._id}
@@ -562,7 +604,7 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
 
                                         {/* To Suggestions Dropdown */}
                                         {showToSuggestions && (
-                                            <div className="absolute top-[calc(100%+8px)] left-0 w-[300px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-100 z-[100] max-h-[300px] overflow-y-auto overflow-x-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <div className="absolute top-[calc(100%+8px)] left-0 w-[300px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0_0_0_/_0.15)] border border-slate-100 z-[100] max-h-[300px] overflow-y-auto overflow-x-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                                                 {toSuggestions.map((city) => (
                                                     <div
                                                         key={city._id}
@@ -657,7 +699,7 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
 
                                 {/* SEARCH BUTTON */}
                                 <div className="pl-2 pr-4 bg-white border-l border-gray-100 flex items-center h-full rounded-r-[24px]">
-                                    <button onClick={handleSearch} className="h-[58px] w-[58px] bg-[#D84E55] hover:bg-[#C13E44] rounded-[22px] flex items-center justify-center text-white shadow-[0_4px_12px_rgba(216,78,85,0.4)] transition-all hover:scale-105 active:scale-95">
+                                    <button onClick={handleSearch} className="h-[58px] w-[58px] bg-[#D84E55] hover:bg-[#C13E44] rounded-[22px] flex items-center justify-center text-white shadow-[0_4px_12px_rgba(216_78_85_/_0.4)] transition-all hover:scale-105 active:scale-95">
                                         <Search className="h-6 w-6 stroke-[3px]" />
                                     </button>
                                 </div>
@@ -688,22 +730,37 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
                                 </div>
 
                                 {/* Dynamic Promo Cards from Coupons */}
-                                {activeCoupons.map((coupon) => (
-                                    <div key={coupon._id || coupon.code} className="flex-shrink-0 w-60 h-[110px] bg-white rounded-2xl p-4 border border-gray-100 relative overflow-hidden group hover:shadow-md transition-shadow cursor-pointer shadow-sm">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 bg-[#FEE2E2] rounded-xl flex items-center justify-center">
-                                                <Tag className="h-6 w-6 text-[#D84E55]" />
+                                {activeCoupons.map((coupon, index) => {
+                                    const gradients = [
+                                        'from-[#FFF1F1] to-[#FFE4E4] border-[#FED7D7]',
+                                        'from-[#EBF5FF] to-[#D6E9FF] border-[#B9E0FF]',
+                                        'from-[#E6FFFA] to-[#D1FFF5] border-[#A7F3D0]',
+                                        'from-[#FFFBEB] to-[#FEF3C7] border-[#FDE68A]',
+                                        'from-[#EEF2FF] to-[#E0E7FF] border-[#C7D2FE]'
+                                    ];
+                                    const gradientClass = gradients[index % gradients.length];
+
+                                    return (
+                                        <div key={coupon._id || coupon.code} className={`flex-shrink-0 w-60 h-[110px] bg-gradient-to-br ${gradientClass} rounded-2xl p-4 border relative overflow-hidden group hover:shadow-md transition-all cursor-pointer shadow-sm hover:-translate-y-1`}>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 bg-white/80 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-sm border border-white">
+                                                    <Tag className="h-6 w-6 text-[#D84E55]" />
+                                                </div>
+                                                <div className="z-10">
+                                                    <h4 className="font-bold text-sm text-gray-800">Use {coupon.code}</h4>
+                                                    <p className="text-[11px] text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis w-32">{coupon.description || 'Special Deal'}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h4 className="font-bold text-sm text-gray-800">Use {coupon.code}</h4>
-                                                <p className="text-[11px] text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis w-32">{coupon.description || 'Special Deal'}</p>
+                                            <div className="mt-2 text-[#D84E55] font-black text-xs z-10">
+                                                {coupon.discountType === 'flat' ? `Flat ₹${coupon.discountValue || coupon.discountAmount} OFF` : `Get ${coupon.discountValue || coupon.discountAmount}% OFF`}
+                                            </div>
+                                            {/* Decorative element */}
+                                            <div className="absolute -bottom-2 -right-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                                                <Tag className="h-16 w-16 rotate-12" />
                                             </div>
                                         </div>
-                                        <div className="mt-2 text-[#D84E55] font-black text-xs">
-                                            {coupon.discountType === 'flat' ? `Flat ₹${coupon.discountValue || coupon.discountAmount} OFF` : `Get ${coupon.discountValue || coupon.discountAmount}% OFF`}
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
 
                                 {/* Promo Card 3 - Vijayant Travels example from image */}
                                 <div className="flex-shrink-0 w-60 h-[110px] bg-[#C13E44] rounded-2xl p-4 relative overflow-hidden group hover:shadow-md transition-shadow cursor-pointer">
@@ -780,6 +837,11 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
                     </div>
 
                     <div className="space-y-6">
+                        {/* Search Top Ad */}
+                        <div className="mb-6">
+                            <AdCarousel position="SearchTop" source={searchParams?.fromCity} destination={searchParams?.toCity} />
+                        </div>
+
                         {/* Results Header Strip */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
@@ -823,152 +885,154 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
                                     <button onClick={clearFilters} className="mt-8 px-8 py-3 bg-[#D84E55] text-white rounded-xl font-bold text-sm shadow-md hover:bg-[#C13E44] transition-all">Clear All Filters</button>
                                 </div>
                             ) : (
-                                currentBuses.map((bus) => (
-                                    <div key={bus.id} className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow group relative">
-                                        {/* Dynamic Coupon Badge */}
-                                        {activeCoupons.length > 0 && (() => {
-                                            const bestCoupon = activeCoupons.reduce((best, current) => {
-                                                if (current.minBookingAmount && bus.price < current.minBookingAmount) return best;
-                                                const currentVal = current.discountValue || current.discountAmount || 0;
-                                                const currentDiscount = current.discountType === 'flat' ? currentVal : (bus.price * currentVal / 100);
-                                                const maxCapped = current.maxDiscountAmount ? Math.min(currentDiscount, current.maxDiscountAmount) : currentDiscount;
+                                currentBuses.map((bus, index) => {
+                                    const nearestBP = (bus.boardingPoints || []).filter(p => p.distance).reduce((prev, curr) => {
+                                        if (!prev || parseFloat(curr.distance) < parseFloat(prev.distance)) return curr;
+                                        return prev;
+                                    }, null);
 
-                                                const bestVal = best ? (best.discountValue || best.discountAmount || 0) : 0;
-                                                const bestDiscount = best ? (best.discountType === 'flat' ? bestVal : (bus.price * bestVal / 100)) : 0;
-                                                const bestMaxCapped = best?.maxDiscountAmount ? Math.min(bestDiscount, best.maxDiscountAmount) : bestDiscount;
+                                    return (
+                                        <React.Fragment key={bus.id || index}>
+                                            <div className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow group relative">
 
-                                                return maxCapped > bestMaxCapped ? current : best;
-                                            }, null);
 
-                                            if (!bestCoupon) return null;
-
-                                            const val = bestCoupon.discountValue || bestCoupon.discountAmount || 0;
-                                            const discountAmt = bestCoupon.discountType === 'flat' ? val : Math.min(bus.price * val / 100, bestCoupon.maxDiscountAmount || Infinity);
-
-                                            return (
-                                                <div className="absolute top-4 right-6 flex items-center gap-1.5 bg-[#FFFBEB] px-3 py-1 rounded-lg border border-[#FEF3C7]">
-                                                    <Tag className="h-3 w-3 text-[#D97706]" />
-                                                    <span className="text-[10px] font-black text-[#D97706] uppercase tracking-tighter">Save up to ₹{Math.round(discountAmt)} with {bestCoupon.code}</span>
-                                                </div>
-                                            );
-                                        })()}
-
-                                        <div className="p-6">
-                                            {(() => {
-                                                const nearestBP = (bus.boardingPoints || []).filter(p => p.distance).reduce((prev, curr) => {
-                                                    if (!prev || parseFloat(curr.distance) < parseFloat(prev.distance)) return curr;
-                                                    return prev;
-                                                }, null);
-
-                                                if (!nearestBP) return null;
-
-                                                return (
-                                                    <div className="absolute top-0 left-0 bg-[#E0F2FE] px-4 py-2 rounded-br-2xl border-b border-r border-[#BAE6FD] flex items-center gap-2 z-10 shadow-md animate-fade-in-right">
-                                                        <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                                                        <span className="text-[11px] font-black text-blue-800 uppercase tracking-widest flex items-center gap-1.5">
-                                                            <span className="text-base leading-none">⭐</span> 
-                                                            Nearest Boarding: <span className="text-blue-900 font-extrabold">{nearestBP.location}</span> — {nearestBP.distance} km away
+                                                {/* Nearest Boarding Ribbon */}
+                                                {nearestBP && (
+                                                    <div className="bg-[#E0F2FE] px-4 md:px-6 py-2.5 border-b border-[#BAE6FD] flex flex-col md:flex-row md:items-center justify-between z-10 w-full relative group-hover:bg-[#ebf8ff] transition-colors">
+                                                        <div className="flex items-center gap-2 mb-2 md:mb-0">
+                                                            <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59_130_246_/_0.5)] flex-shrink-0" />
+                                                            <span className="text-[11px] font-black text-blue-800 uppercase tracking-widest flex items-center gap-1.5 leading-snug">
+                                                                <span className="text-base leading-none">⭐</span>
+                                                                Nearest Boarding: <span className="text-blue-900 font-extrabold ml-1">{nearestBP.location}</span>
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-[11px] font-bold text-blue-800 shrink-0 md:pl-4 md:border-l border-[#BAE6FD]">
+                                                            — {nearestBP.distance} km away
                                                         </span>
                                                     </div>
-                                                );
-                                            })()}
-                                            <div className="flex flex-col md:flex-row items-center gap-8">
-                                                {/* Left: Operator Info */}
-                                                <div className="w-full md:w-[220px]">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <h3 className="text-lg font-black text-gray-800 leading-tight group-hover:text-[#D84E55] transition-colors">{bus.name}</h3>
-                                                        {bus.primo && <div className="bg-[#1E293B] text-white text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase italic">Primo</div>}
-                                                    </div>
-                                                    <p className="text-xs text-gray-400 font-medium mb-4">{bus.type}</p>
+                                                )}
 
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="flex items-center gap-1.5 bg-[#10B981] text-white px-2 py-0.5 rounded-md">
-                                                            <Star className="h-3 w-3 fill-white" />
-                                                            <span className="text-xs font-black">{bus.rating.toFixed(1)}</span>
+                                                <div className="p-6">
+                                                    <div className="flex flex-col md:flex-row items-center gap-8">
+                                                    {/* Left: Operator Info */}
+                                                    <div className="w-full md:w-[220px]">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h3 className="text-lg font-black text-gray-800 leading-tight group-hover:text-[#D84E55] transition-colors">{bus.name}</h3>
+                                                            {bus.primo && <div className="bg-[#1E293B] text-white text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase italic">Primo</div>}
                                                         </div>
-                                                        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{bus.reviews} ratings</div>
+                                                        <p className="text-xs text-gray-400 font-medium mb-4">{bus.type}</p>
+
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="flex items-center gap-1.5 bg-[#10B981] text-white px-2 py-0.5 rounded-md">
+                                                                <Star className="h-3 w-3 fill-white" />
+                                                                <span className="text-xs font-black">{bus.rating.toFixed(1)}</span>
+                                                            </div>
+                                                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{bus.reviews} ratings</div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Center: Route Info */}
+                                                    <div className="flex-1 flex items-center justify-between px-8 border-x border-gray-50">
+                                                        <div className="text-center md:text-left">
+                                                            <p className="text-2xl font-black text-gray-800">{bus.departure}</p>
+                                                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{bus.departurePoint}</p>
+                                                        </div>
+
+                                                        <div className="flex flex-col items-center px-4">
+                                                            <span className="text-[10px] font-bold text-gray-400 mb-1">{bus.duration}</span>
+                                                            <div className="flex items-center gap-1 w-24">
+                                                                <div className="h-[2px] flex-1 bg-gray-200 rounded-full"></div>
+                                                                <div className="w-1.5 h-1.5 rounded-full border border-gray-200"></div>
+                                                                <div className="h-[2px] flex-1 bg-gray-200 rounded-full"></div>
+                                                            </div>
+                                                            <span className="text-[10px] font-bold text-gray-400 mt-1">{bus.seatsLeft} Seats <span className="text-[#D84E55] italic">(4 Single)</span></span>
+                                                        </div>
+
+                                                        <div className="text-center md:text-right">
+                                                            <p className="text-2xl font-black text-gray-800">{bus.arrival}</p>
+                                                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{bus.arrivalPoint}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Right: Pricing and Action */}
+                                                    <div className="md:w-[220px] flex flex-col items-end">
+                                                        <div className="text-right mb-6">
+                                                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest line-through">₹{Math.floor(bus.price * 1.15)}</p>
+                                                            <div className="flex flex-col items-end">
+                                                                <div className="flex items-baseline justify-end gap-1">
+                                                                    <span className="text-xs font-bold text-gray-400">Onwards</span>
+                                                                    <span className="text-3xl font-black text-gray-800 leading-none">₹{bus.price}</span>
+                                                                </div>
+                                                                {bus.commissionApplied > 0 && (
+                                                                    <div className="flex items-center gap-1 mt-1 group relative cursor-help">
+                                                                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-[0.1em] bg-emerald-50 px-1.5 py-0.5 rounded">Incl. Fees</span>
+                                                                        <Info className="h-2.5 w-2.5 text-gray-300" />
+                                                                        <div className="absolute bottom-full right-0 mb-2 w-48 bg-slate-900 text-white p-3 rounded-xl text-[10px] hidden group-hover:block z-50 shadow-2xl border border-white/10">
+                                                                            <div className="flex justify-between mb-1"><span>Base Fare</span><span>₹{bus.baseFare}</span></div>
+                                                                            <div className="flex justify-between font-bold text-emerald-400 border-t border-white/10 pt-1 mt-1"><span>Booking Fee</span><span>+₹{bus.commissionApplied}</span></div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <button
+                                                            onClick={() => handleViewSeats(bus)}
+                                                            className="w-full py-4 rounded-xl font-bold text-sm uppercase tracking-widest transition-all shadow-md active:scale-[0.98] bg-[#D84E55] text-white hover:bg-[#C13E44] hover:shadow-lg"
+                                                        >
+                                                            View Seats
+                                                        </button>
+                                                        
+                                                        <BusCouponBadge busId={bus.id || bus.busId || bus._id} />
                                                     </div>
                                                 </div>
 
-                                                {/* Center: Route Info */}
-                                                <div className="flex-1 flex items-center justify-between px-8 border-x border-gray-50">
-                                                    <div className="text-center md:text-left">
-                                                        <p className="text-2xl font-black text-gray-800">{bus.departure}</p>
-                                                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{bus.departurePoint}</p>
-                                                    </div>
-
-                                                    <div className="flex flex-col items-center px-4">
-                                                        <span className="text-[10px] font-bold text-gray-400 mb-1">{bus.duration}</span>
-                                                        <div className="flex items-center gap-1 w-24">
-                                                            <div className="h-[2px] flex-1 bg-gray-200 rounded-full"></div>
-                                                            <div className="w-1.5 h-1.5 rounded-full border border-gray-200"></div>
-                                                            <div className="h-[2px] flex-1 bg-gray-200 rounded-full"></div>
+                                                {/* Bottom Features Strip */}
+                                                <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between">
+                                                    <div className="flex items-center gap-6">
+                                                        <div className="flex items-center gap-2 group cursor-pointer">
+                                                            <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-[#D84E55]/10 transition-colors">
+                                                                <MapPin className="h-3 w-3 text-gray-400 group-hover:text-[#D84E55]" />
+                                                            </div>
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase group-hover:text-gray-600">Boarding & Dropping</span>
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-gray-400 mt-1">{bus.seatsLeft} Seats <span className="text-[#D84E55] italic">(4 Single)</span></span>
-                                                    </div>
-
-                                                    <div className="text-center md:text-right">
-                                                        <p className="text-2xl font-black text-gray-800">{bus.arrival}</p>
-                                                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{bus.arrivalPoint}</p>
-                                                    </div>
-                                                </div>
-
-                                                {/* Right: Pricing and Action */}
-                                                <div className="md:w-[220px] flex flex-col items-end">
-                                                    <div className="text-right mb-6">
-                                                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest line-through">₹{Math.floor(bus.price * 1.15)}</p>
-                                                        <div className="flex items-baseline justify-end gap-1">
-                                                            <span className="text-xs font-bold text-gray-400">Onwards</span>
-                                                            <span className="text-3xl font-black text-gray-800 leading-none">₹{bus.price}</span>
+                                                        <div className="flex items-center gap-2 group cursor-pointer">
+                                                            <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-[#10B981]/10 transition-colors">
+                                                                <ShieldCheck className="h-3 w-3 text-gray-400 group-hover:text-[#10B981]" />
+                                                            </div>
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase group-hover:text-gray-600">Travel Policy</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 group cursor-pointer">
+                                                            <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-blue-500/10 transition-colors">
+                                                                <Info className="h-3 w-3 text-gray-400 group-hover:text-blue-500" />
+                                                            </div>
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase group-hover:text-gray-600">Amenities</span>
                                                         </div>
                                                     </div>
 
-                                                    <button
-                                                        onClick={() => handleViewSeats(bus)}
-                                                        className="w-full py-4 rounded-xl font-bold text-sm uppercase tracking-widest transition-all shadow-md active:scale-[0.98] bg-[#D84E55] text-white hover:bg-[#C13E44] hover:shadow-lg"
-                                                    >
-                                                        View Seats
-                                                    </button>
+                                                    <div className="flex items-center gap-3">
+                                                        {bus.amenities.slice(0, 3).map((amenity, i) => (
+                                                            <div key={i} className="text-gray-300 hover:text-gray-500 transition-colors cursor-help">
+                                                                {amenity === 'wifi' && <Wifi className="h-4 w-4" />}
+                                                                {amenity === 'water' && <Coffee className="h-4 w-4" />}
+                                                                {amenity === 'power' && <Power className="h-4 w-4" />}
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
-
-                                            {/* Bottom Features Strip */}
-                                            <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between">
-                                                <div className="flex items-center gap-6">
-                                                    <div className="flex items-center gap-2 group cursor-pointer">
-                                                        <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-[#D84E55]/10 transition-colors">
-                                                            <MapPin className="h-3 w-3 text-gray-400 group-hover:text-[#D84E55]" />
-                                                        </div>
-                                                        <span className="text-[10px] font-bold text-gray-400 uppercase group-hover:text-gray-600">Boarding & Dropping</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 group cursor-pointer">
-                                                        <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-[#10B981]/10 transition-colors">
-                                                            <ShieldCheck className="h-3 w-3 text-gray-400 group-hover:text-[#10B981]" />
-                                                        </div>
-                                                        <span className="text-[10px] font-bold text-gray-400 uppercase group-hover:text-gray-600">Travel Policy</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 group cursor-pointer">
-                                                        <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-blue-500/10 transition-colors">
-                                                            <Info className="h-3 w-3 text-gray-400 group-hover:text-blue-500" />
-                                                        </div>
-                                                        <span className="text-[10px] font-bold text-gray-400 uppercase group-hover:text-gray-600">Amenities</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-3">
-                                                    {bus.amenities.slice(0, 3).map((amenity, i) => (
-                                                        <div key={i} className="text-gray-300 hover:text-gray-500 transition-colors cursor-help">
-                                                            {amenity === 'wifi' && <Wifi className="h-4 w-4" />}
-                                                            {amenity === 'water' && <Coffee className="h-4 w-4" />}
-                                                            {amenity === 'power' && <Power className="h-4 w-4" />}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                            {/* Inline seat selection removed in favor of slide-up overlay */}
                                         </div>
-                                        {/* Inline seat selection removed in favor of slide-up overlay */}
-                                    </div>
-                                ))
+
+                                        {/* Dynamic Inline Ad Injection */}
+                                        {(index + 1) % 4 === 0 && inlineAds.length > 0 && (
+                                            <div className="py-2 animate-in slide-in-from-left duration-500">
+                                                <AdCarousel position="SearchInline" source={searchParams?.fromCity} destination={searchParams?.toCity} />
+                                            </div>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })
                             )}
                         </div>
                     </div>
@@ -1029,3 +1093,4 @@ const BusResults = ({ searchParams, setSearchParams, setView, setSelectedBus, se
 };
 
 export default BusResults;
+

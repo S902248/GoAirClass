@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Ticket, Calendar, Clock, MapPin, ChevronRight, ArrowRight, Star, ShieldCheck, Download, XCircle, Search, HelpCircle, Map, Users, Hotel, Hash, Phone, Tag, Bed, User, Plane } from 'lucide-react';
+import { Ticket, Calendar, Clock, MapPin, ChevronRight, ArrowRight, Star, ShieldCheck, Download, XCircle, Search, HelpCircle, Map, Users, Hotel, Hash, Phone, Tag, Bed, User, Plane, Train } from 'lucide-react';
 import { getUserBookings } from '../api/bookingApi';
 import { getUserHotelBookings } from '../api/hotelApi';
 import flightApi from '../api/flightApi';
+import trainApi from '../api/trainApi';
+import { toast } from 'react-toastify';
 
 const MyBookings = ({ setView }) => {
     const navigate = useNavigate();
     const [busBookings, setBusBookings] = useState([]);
     const [hotelBookings, setHotelBookings] = useState([]);
     const [flightBookings, setFlightBookings] = useState([]);
-    const [activeTab, setActiveTab] = useState('all'); // all, bus, hotel, flight
+    const [trainBookings, setTrainBookings] = useState([]);
+    const [activeTab, setActiveTab] = useState('all'); // all, bus, train, hotel, flight
     const [statusFilter, setStatusFilter] = useState('upcoming'); // upcoming, completed, cancelled
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -22,14 +25,16 @@ const MyBookings = ({ setView }) => {
     const fetchBookings = async () => {
         try {
             setLoading(true);
-            const [busData, hotelData, flightData] = await Promise.all([
+            const [busData, hotelData, flightData, trainData] = await Promise.all([
                 getUserBookings(),
                 getUserHotelBookings(),
-                flightApi.getUserBookings()
+                flightApi.getUserBookings(),
+                trainApi.getUserBookings().catch(() => ({ success: false, bookings: [] }))
             ]);
             setBusBookings(busData || []);
             setHotelBookings(hotelData?.bookings || []);
             setFlightBookings(flightData?.bookings || []);
+            setTrainBookings(trainData?.success ? trainData.bookings : []);
         } catch (err) {
             console.error('Failed to fetch bookings:', err);
             setError('Could not load your bookings. Please try again.');
@@ -41,10 +46,12 @@ const MyBookings = ({ setView }) => {
     const getStatusStyles = (status) => {
         const s = status?.toLowerCase();
         switch (s) {
-            case 'confirmed': 
+            case 'confirmed':
             case 'completed': return 'bg-emerald-50 text-emerald-600 border-emerald-200';
             case 'cancelled': return 'bg-rose-50 text-rose-600 border-rose-200';
-            case 'pending': return 'bg-amber-50 text-amber-600 border-amber-200';
+            case 'pending':
+            case 'rac':
+            case 'wl': return 'bg-amber-50 text-amber-600 border-amber-200';
             default: return 'bg-gray-50 text-gray-600 border-gray-200';
         }
     };
@@ -54,23 +61,34 @@ const MyBookings = ({ setView }) => {
         else navigate('/' + path);
     };
 
+    const handleCancelTrain = async (bookingId) => {
+        if (!window.confirm('Are you sure you want to cancel? A 20% cancellation fee applies.')) return;
+        try {
+            const res = await trainApi.cancelTrainBooking(bookingId);
+            if (res.success) {
+                toast.success(`Booking cancelled. Refund of ₹${res.refundAmount} initiated.`);
+                fetchBookings();
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Cancellation failed');
+        }
+    };
+
     // --- Unified filtering and sorting ---
     const allMerged = [
         ...busBookings.map(b => ({ ...b, type: 'bus', sortDate: new Date(b.travelDate || b.createdAt) })),
         ...hotelBookings.map(h => ({ ...h, type: 'hotel', sortDate: new Date(h.checkInDate || h.createdAt) })),
-        ...flightBookings.map(f => ({ ...f, type: 'flight', sortDate: new Date(f.departureTime || f.createdAt) }))
+        ...flightBookings.map(f => ({ ...f, type: 'flight', sortDate: new Date(f.departureTime || f.createdAt) })),
+        ...trainBookings.map(t => ({ ...t, type: 'train', sortDate: new Date(t.journeyDate || t.createdAt) }))
     ].sort((a, b) => b.sortDate - a.sortDate);
 
     const filtered = allMerged.filter(b => {
         const tabMatch = activeTab === 'all' || b.type === activeTab;
-
-        // Match status grouping
-        const s = (b.status || b.bookingStatus)?.toLowerCase();
+        const s = (b.status || b.bookingStatus || b.paymentStatus)?.toLowerCase();
         let statusMatch = false;
-        if (statusFilter === 'upcoming') statusMatch = s === 'confirmed' || s === 'pending' || s === 'completed';
-        else if (statusFilter === 'completed') statusMatch = s === 'completed'; // Should be checked based on date
-        else if (statusFilter === 'cancelled') statusMatch = s === 'cancelled';
-
+        if (statusFilter === 'upcoming') statusMatch = s !== 'cancelled' && s !== 'completed' && s !== 'refunded';
+        else if (statusFilter === 'completed') statusMatch = s === 'completed' || s === 'success';
+        else if (statusFilter === 'cancelled') statusMatch = s === 'cancelled' || s === 'refunded';
         return tabMatch && statusMatch;
     });
 
@@ -104,18 +122,18 @@ const MyBookings = ({ setView }) => {
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
                         <div>
                             <h1 className="text-4xl font-black text-gray-900 tracking-tight">My Bookings</h1>
-                            <p className="text-gray-400 font-bold mt-1 text-sm">Manage your bus, hotel and flight reservations</p>
+                            <p className="text-gray-400 font-bold mt-1 text-sm">Manage your travel reservations across all modes</p>
                         </div>
 
                         {/* Tab Switcher */}
-                        <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200/50 w-fit">
-                            {['all', 'bus', 'hotel', 'flight'].map(tab => (
+                        <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200/50 w-fit overflow-x-auto max-w-full">
+                            {['all', 'bus', 'train', 'hotel', 'flight'].map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-white text-gray-900 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab ? 'bg-white text-gray-900 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
-                                    {tab === 'all' ? 'All' : tab === 'bus' ? 'Buses' : tab === 'hotel' ? 'Hotels' : 'Flights'}
+                                    {tab === 'all' ? 'All' : tab === 'bus' ? 'Buses' : tab === 'train' ? 'Trains' : tab === 'hotel' ? 'Hotels' : 'Flights'}
                                 </button>
                             ))}
                         </div>
@@ -163,6 +181,7 @@ const MyBookings = ({ setView }) => {
                             if (item.type === 'bus') return <BusBookingCard key={item._id} booking={item} getStatusStyles={getStatusStyles} handleNavigate={handleNavigate} />;
                             if (item.type === 'hotel') return <HotelBookingCard key={item._id} booking={item} getStatusStyles={getStatusStyles} handleNavigate={handleNavigate} />;
                             if (item.type === 'flight') return <FlightBookingCard key={item._id} booking={item} getStatusStyles={getStatusStyles} handleNavigate={handleNavigate} />;
+                            if (item.type === 'train') return <TrainBookingCard key={item._id} booking={item} getStatusStyles={getStatusStyles} handleCancel={handleCancelTrain} />;
                             return null;
                         })}
                     </div>
@@ -172,12 +191,115 @@ const MyBookings = ({ setView }) => {
     );
 };
 
-// --- Flight Card ---
+// ─── Train Booking Card ───────────────────────────────────────────────────────
+const TrainBookingCard = ({ booking, getStatusStyles, handleCancel }) => (
+    <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/20 overflow-hidden flex flex-col md:flex-row hover:shadow-2xl hover:border-red-100 transition-all">
+        <div className="flex-1 p-8 md:p-10">
+            {/* Header */}
+            <div className="flex justify-between items-start mb-8">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="px-3 py-1 bg-red-50 text-red-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-red-100 flex items-center gap-1">
+                            <Train className="h-2.5 w-2.5" /> Train
+                        </div>
+                    </div>
+                    <h3 className="text-2xl font-black text-gray-900 flex items-center flex-wrap gap-3">
+                        {booking.train?.name}
+                        <span className="text-[10px] font-black text-gray-400 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
+                            #{booking.train?.number}
+                        </span>
+                    </h3>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">PNR: {booking.pnr}</p>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${getStatusStyles(booking.status)} shadow-sm`}>
+                        {booking.status}
+                    </span>
+                    <span className="text-[10px] font-black text-gray-300 uppercase tracking-tighter italic">
+                        {booking.passengers?.[0]?.coachType}
+                    </span>
+                </div>
+            </div>
+
+            {/* Route */}
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mb-8 bg-gray-50/50 p-5 rounded-[1.5rem] border border-gray-50">
+                <div className="text-right">
+                    <p className="text-xl font-black text-gray-900">{booking.source?.code}</p>
+                    <p className="text-[9px] font-black text-gray-400 uppercase mt-1">{booking.source?.name}</p>
+                </div>
+                <div className="flex items-center gap-1 px-4">
+                    <div className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+                    <div className="h-px bg-gray-200 flex-1 border-t border-dashed min-w-[40px]" />
+                    <Train className="h-4 w-4 text-gray-300 shrink-0" />
+                    <div className="h-px bg-gray-200 flex-1 border-t border-dashed min-w-[40px]" />
+                    <div className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+                </div>
+                <div className="text-left">
+                    <p className="text-xl font-black text-gray-900">{booking.destination?.code}</p>
+                    <p className="text-[9px] font-black text-gray-400 uppercase mt-1">{booking.destination?.name}</p>
+                </div>
+            </div>
+
+            {/* Details grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 flex items-center gap-1 opacity-60"><Calendar className="w-3 h-3" /> Journey</p>
+                    <p className="text-xs font-black text-gray-800">{booking.journeyDate}</p>
+                </div>
+                <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 flex items-center gap-1 opacity-60"><Users className="w-3 h-3" /> Passengers</p>
+                    <p className="text-xs font-black text-gray-800">{booking.passengers?.length ?? 0} Person(s)</p>
+                </div>
+                <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 flex items-center gap-1 opacity-60"><Hash className="w-3 h-3" /> Seat</p>
+                    <p className="text-xs font-black text-gray-800">
+                        {booking.status === 'CONFIRMED'
+                            ? (booking.allocatedSeats?.map(s => `${s.coachNumber}-${s.seatNumber}`).join(', ') || '—')
+                            : `${booking.status} Queue`}
+                    </p>
+                </div>
+                <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 flex items-center gap-1 opacity-60"><Download className="w-3 h-3" /> Ticket</p>
+                    <a href={`/api/train-bookings/booking/${booking._id}/pdf`} target="_blank" rel="noopener noreferrer"
+                        className="text-[10px] font-black text-red-500 hover:underline uppercase tracking-widest">
+                        Get PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className="w-full md:w-64 bg-gray-50/50 p-8 md:p-10 border-t md:border-t-0 md:border-l border-gray-100 flex flex-col justify-between">
+            <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 opacity-60">Paid Amount</p>
+                <p className="text-4xl font-black text-gray-900 tracking-tighter">₹{booking.totalFare}</p>
+                <p className={`text-[10px] font-black uppercase tracking-widest mt-2 ${booking.paymentStatus === 'SUCCESS' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {booking.paymentStatus}
+                </p>
+            </div>
+            <div className="mt-6">
+                {booking.status !== 'CANCELLED' ? (
+                    <button onClick={() => handleCancel(booking._id)}
+                        className="w-full py-4 bg-white border border-rose-100 text-rose-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 transition-all flex items-center justify-center gap-2">
+                        <XCircle className="w-4 h-4" /> Cancel Ticket
+                    </button>
+                ) : (
+                    <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 text-[9px] font-black text-rose-600 uppercase tracking-widest text-center">
+                        Refund ₹{booking.refundAmount} {booking.isRefunded ? 'Completed' : 'Initiated'}
+                    </div>
+                )}
+            </div>
+        </div>
+    </div>
+);
+
+// ─── Flight Booking Card ──────────────────────────────────────────────────────
 const FlightBookingCard = ({ booking, getStatusStyles, handleNavigate }) => {
-    const flight = booking.flightId || {};
-    const airline = flight.airlineId || {};
-    const departure = new Date(booking.departureTime || flight.departureTime);
-    const arrival = new Date(booking.arrivalTime || flight.arrivalTime);
+    const details = booking.flightDetails || {};
+    const departure = new Date(details.departureTime || booking.createdAt);
+    const arrival = new Date(details.arrivalTime || booking.createdAt);
+    const totalFare = booking?.fareDetails?.totalAmount || booking?.fareDetails?.totalFare || 0;
+    const isCancelled = booking.bookingStatus === 'CANCELLED' || booking.cancellationDetails?.isCancelled;
 
     return (
         <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/20 overflow-hidden flex flex-col md:flex-row hover:shadow-2xl hover:border-blue-100 transition-all group">
@@ -190,8 +312,8 @@ const FlightBookingCard = ({ booking, getStatusStyles, handleNavigate }) => {
                             </div>
                         </div>
                         <h3 className="text-2xl font-black text-gray-900 flex items-center gap-3">
-                            {airline.name || 'Airline'}
-                            <span className="text-[10px] text-gray-400">{flight.flightNumber}</span>
+                            {details.airline || 'Airline'}
+                            <span className="text-[10px] text-gray-400">{details.flightNumber || 'FLIGHT'}</span>
                         </h3>
                     </div>
                     <div className="flex flex-col items-end gap-3">
@@ -204,7 +326,7 @@ const FlightBookingCard = ({ booking, getStatusStyles, handleNavigate }) => {
 
                 <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-6 mb-10 bg-gray-50/50 p-6 rounded-[1.5rem] border border-gray-50">
                     <div className="text-right">
-                        <p className="text-2xl font-black text-gray-900 leading-none">{flight.fromAirport?.code || 'DEL'}</p>
+                        <p className="text-2xl font-black text-gray-900 leading-none">{details.departureAirport || 'DEP'}</p>
                         <p className="text-xl font-black text-gray-900 mt-2">{departure.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                     <div className="flex flex-col items-center px-6">
@@ -217,7 +339,7 @@ const FlightBookingCard = ({ booking, getStatusStyles, handleNavigate }) => {
                         </div>
                     </div>
                     <div className="text-left">
-                        <p className="text-2xl font-black text-gray-900 leading-none">{flight.toAirport?.code || 'BOM'}</p>
+                        <p className="text-2xl font-black text-gray-900 leading-none">{details.arrivalAirport || 'ARR'}</p>
                         <p className="text-xl font-black text-gray-900 mt-2">{arrival.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                 </div>
@@ -245,20 +367,28 @@ const FlightBookingCard = ({ booking, getStatusStyles, handleNavigate }) => {
             <div className="w-full md:w-72 bg-gray-50/50 p-8 md:p-10 border-t md:border-t-0 md:border-l border-gray-100 flex flex-col justify-between">
                 <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 opacity-60">Total Fare</p>
-                    <p className="text-4xl font-black text-gray-900 tracking-tighter">₹{booking.totalAmount}</p>
+                    <p className="text-4xl font-black text-gray-900 tracking-tighter">₹{totalFare}</p>
                     <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-2">{booking.paymentStatus}</p>
                 </div>
 
                 <div className="space-y-3">
-                    <button 
-                        onClick={() => window.open(`http://localhost:5000/api/tickets/${booking._id}/pdf`, '_blank')}
+                    <button
+                        onClick={() => handleNavigate(`flight-ticket/${booking.pnr}`)}
                         className="w-full py-4 bg-white border border-gray-200 text-gray-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-gray-900 transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
-                        <Download className="w-4 h-4" /> E-Ticket
+                        <Ticket className="w-4 h-4" /> E-Ticket
                     </button>
-                    <button className="w-full py-4 bg-white border border-rose-100 text-rose-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 transition-all flex items-center justify-center gap-2">
-                        <XCircle className="w-4 h-4" /> Cancel
-                    </button>
+                    {isCancelled ? (
+                        <button disabled className="w-full py-4 bg-gray-100 text-gray-400 rounded-2xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed">
+                            Cancelled
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={() => handleNavigate(`flight/cancel/${booking.bookingId}`)}
+                            className="w-full py-4 bg-white border border-rose-100 text-rose-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 transition-all flex items-center justify-center gap-2">
+                            <XCircle className="w-4 h-4" /> Cancel
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
@@ -304,21 +434,25 @@ const BusBookingCard = ({ booking, getStatusStyles, handleNavigate }) => {
 
                 <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-6 mb-10 bg-gray-50/50 p-6 rounded-[1.5rem] border border-gray-50">
                     <div className="text-right">
-                        <p className="text-xl font-black text-gray-900 leading-none">{booking.boardingPoint?.split(',')[0] || 'Origin'}</p>
-                        <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mt-2">Boarding</p>
+                        <p className="text-xl font-black text-gray-900 leading-none">{((booking.boarding && booking.boarding.point) || booking.boardingPoint)?.split(',')[0] || 'Origin'}</p>
+                        <p className="text-[12px] font-black text-orange-600 mt-1">{(booking.boarding && booking.boarding.time) || booking.schedule?.departureTime || ''}</p>
+                        <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mt-1">Boarding</p>
                     </div>
                     <div className="flex flex-col items-center px-6">
                         <div className="flex items-center w-full">
                             <div className="w-2.5 h-2.5 rounded-full border-[3px] border-gray-200" />
-                            <div className="h-0.5 bg-gray-100 w-20" />
+                            <div className="h-0.5 bg-gray-100 w-20 relative">
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] font-black text-gray-300">--:--</div>
+                            </div>
                             <ArrowRight className="h-5 w-5 text-gray-300 mx-2" />
                             <div className="h-0.5 bg-gray-100 w-20" />
                             <div className="w-2.5 h-2.5 rounded-full bg-gray-200" />
                         </div>
                     </div>
                     <div className="text-left">
-                        <p className="text-xl font-black text-gray-900 leading-none">{booking.droppingPoint?.split(',')[0] || 'Destination'}</p>
-                        <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mt-2">Dropping</p>
+                        <p className="text-xl font-black text-gray-900 leading-none">{((booking.dropping && booking.dropping.point) || booking.droppingPoint)?.split(',')[0] || 'Destination'}</p>
+                        <p className="text-[12px] font-black text-emerald-600 mt-1">{(booking.dropping && booking.dropping.time) || booking.schedule?.arrivalTime || ''}</p>
+                        <p className="text-[9px] font-black tracking-widest text-gray-400 uppercase mt-1">Dropping</p>
                     </div>
                 </div>
 
@@ -346,8 +480,8 @@ const BusBookingCard = ({ booking, getStatusStyles, handleNavigate }) => {
                 <div className="mb-8">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 opacity-60">Total Amount</p>
                     <p className="text-4xl font-black text-gray-900 tracking-tighter">₹{booking.totalFare || 0}</p>
-                    <p className={`text-[10px] font-black uppercase tracking-widest mt-2 ${booking.paymentStatus === 'Paid' ? 'text-emerald-500' : 'text-amber-500'}`}>
-                        {booking.paymentStatus === 'Paid' ? 'Confirmed' : 'Pending'}
+                    <p className={`text-[10px] font-black uppercase tracking-widest mt-2 ${['Paid', 'Completed'].includes(booking.paymentStatus) ? 'text-emerald-500' : 'text-amber-500'}`}>
+                        {['Paid', 'Completed'].includes(booking.paymentStatus) ? 'Confirmed' : 'Pending'}
                     </p>
                 </div>
 

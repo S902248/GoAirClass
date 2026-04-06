@@ -1,7 +1,9 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle2, Star, MapPin, Tag, Home, Download } from 'lucide-react';
+import { CheckCircle2, Star, MapPin, Tag, Home, Download, Copy } from 'lucide-react';
 import { downloadInvoice } from '../api/hotelApi';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const HotelBookingConfirmation = () => {
     const location = useLocation();
@@ -37,6 +39,7 @@ const HotelBookingConfirmation = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50 via-[#f8f9fa] to-blue-50 pt-24 pb-20 font-inter">
+            <ToastContainer />
             <div className="max-w-2xl mx-auto px-4 sm:px-6">
 
                 {/* Success Header */}
@@ -46,13 +49,23 @@ const HotelBookingConfirmation = () => {
                     </div>
                     <h1 className="text-3xl font-black text-gray-900">Booking Confirmed!</h1>
                     <p className="text-gray-500 font-medium mt-2">Your room has been reserved. A confirmation will be sent to your email.</p>
-                    <div className="mt-3 inline-block bg-gray-100 rounded-full px-4 py-1.5 text-xs font-black text-gray-600 tracking-wider uppercase">
-                        Booking ID: {booking._id || 'N/A'}
+                    <div className="mt-4 inline-flex items-center bg-gray-100 rounded-full pl-4 pr-1.5 py-1.5 text-xs font-black text-gray-600 tracking-wider uppercase border border-gray-200 shadow-sm">
+                        Booking ID: <span className="text-[#006ce4] ml-1">{booking.bookingId || booking._id?.substring(0, 8).toUpperCase()}</span>
+                        <button 
+                            onClick={() => {
+                                navigator.clipboard.writeText(booking.bookingId || booking._id?.substring(0, 8).toUpperCase());
+                                toast.success('Booking ID copied to clipboard!');
+                            }} 
+                            className="ml-2 p-1.5 hover:bg-white rounded-full transition-colors text-gray-500 hover:text-gray-800 border border-transparent hover:border-gray-200"
+                            title="Copy Booking ID"
+                        >
+                            <Copy size={14} />
+                        </button>
                     </div>
                 </div>
 
                 {/* Booking Card */}
-                <div className="bg-white rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.08)] border border-gray-100 overflow-hidden">
+                <div className="bg-white rounded-3xl shadow-[0_8px_40px_rgb(0_0_0_/_0.08)] border border-gray-100 overflow-hidden">
 
                     {/* Hotel Banner */}
                     <div className="relative h-48">

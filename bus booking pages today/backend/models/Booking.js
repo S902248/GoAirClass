@@ -9,6 +9,7 @@ const passengerSchema = new mongoose.Schema({
 
 const bookingSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    pnrNumber: { type: String, unique: true, sparse: true },
     // Passenger info
     passengerName: { type: String },
     passengerEmail: { type: String },
@@ -31,6 +32,14 @@ const bookingSchema = new mongoose.Schema({
     travelDate: { type: String },   // "YYYY-MM-DD"
     boardingPoint: { type: String },
     droppingPoint: { type: String },
+    boarding: {
+        point: { type: String },
+        time: { type: String }
+    },
+    dropping: {
+        point: { type: String },
+        time: { type: String }
+    },
     seatNumbers: { type: [String], default: [] },   // e.g. ["L1", "U3"]
     seatNumber: { type: String },                  // kept for backward compat
     seatDetails: [{
@@ -41,10 +50,21 @@ const bookingSchema = new mongoose.Schema({
 
     // Fare
     baseFare: { type: Number, default: 0 },
+    commission: { type: Number, default: 0 },
     gst: { type: Number, default: 0 },
     discount: { type: Number, default: 0 },
     totalFare: { type: Number, default: 0 },
     couponCode: { type: String, default: '' },
+
+    // Detailed Coupon Funding (for analytics)
+    discountBreakdown: {
+        adminFunded: { type: Number, default: 0 },
+        operatorFunded: { type: Number, default: 0 }
+    },
+
+    // Fraud Prevention & Tracking
+    deviceId: { type: String },
+    ipAddress: { type: String },
 
     // Payment
     status: { type: String, enum: ['Confirmed', 'Cancelled', 'Pending'], default: 'Confirmed' },

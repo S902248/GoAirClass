@@ -1,6 +1,7 @@
 const Hotel = require('../../models/hotel/Hotel');
 const Room = require('../../models/hotel/Room');
 const HotelCoupon = require('../../models/hotel/HotelCoupon');
+const engine = require('../../services/pricingEngine');
 
 const createHotel = async (req, res) => {
     try {
@@ -88,21 +89,37 @@ const getApprovedHotels = async (req, res) => {
             return acc;
         }, {});
 
-        // Attach starting price and best coupon
-        const hotelsWithDeals = hotels.map(hotel => {
+        // Attach starting price and best coupon with live commission calculation
+        const hotelsWithDeals = await Promise.all(hotels.map(async (hotel) => {
             const hRooms = roomsByHotelMap[hotel._id.toString()] || [];
             let startingPrice = null;
             if (hRooms.length > 0) {
                 startingPrice = Math.min(...hRooms.map(r => r.price || Infinity));
                 if (startingPrice === Infinity) startingPrice = null;
             }
+
+            let pricingDetails = null;
+            if (startingPrice) {
+                // Calculate live commission/GST for the search results
+                pricingDetails = await engine.calculate({
+                    category: 'Hotel',
+                    hotelId: hotel._id,
+                    sourceCity: hotel.city,
+                    starRating: hotel.starRating,
+                    operatorId: hotel.operatorId,
+                    basePrice: startingPrice,
+                    isWeekend: false, // In a full implementation, these would be dynamic
+                    isFestival: false
+                });
+            }
             
             return {
                 ...hotel,
                 startingPrice,
+                pricing: pricingDetails,
                 coupon: bestCouponMap[hotel._id.toString()] || null
             };
-        });
+        }));
 
         res.json({ success: true, hotels: hotelsWithDeals });
     } catch (err) {
@@ -126,7 +143,29 @@ const getHotelById = async (req, res) => {
 
         const rooms = await Room.find({ hotelId: req.params.id });
 
-        res.json({ success: true, hotel, rooms });
+        // Calculate dynamic pricing for each room
+        const roomsWithPricing = await Promise.all(rooms.map(async (room) => {
+            const pricingDetails = await engine.calculate({
+                category: 'Hotel',
+                hotelId: hotel._id,
+                sourceCity: hotel.city,
+                starRating: hotel.starRating,
+                operatorId: hotel.operatorId,
+                basePrice: room.price,
+                isWeekend: false,
+                isFestival: false
+            });
+
+            return {
+                ...room.toObject(),
+                basePrice: room.price,
+                commission: pricingDetails.commission,
+                finalPrice: room.price + pricingDetails.commission,
+                pricing: pricingDetails // Also keep the full breakdown
+            };
+        }));
+
+        res.json({ success: true, hotel, rooms: roomsWithPricing });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }

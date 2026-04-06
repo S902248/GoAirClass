@@ -13,7 +13,8 @@ import {
     FileText,
     Bus,
     Hotel,
-    Plane
+    Plane,
+    Train
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -170,7 +171,9 @@ const Sidebar = () => {
                     <SidebarItem icon={Wallet} label="Finance">
                         {[
                             { label: 'Withdraw Amount', to: '/admin/finance/withdraw' },
-                            { label: 'Payment Settings', to: '/admin/finance/settings' }
+                            { label: 'Payment Settings', to: '/admin/finance/settings' },
+                            { label: 'Commission Setup', to: '/admin/finance/commission' },
+                            { label: 'Pricing Simulation', to: '/admin/finance/pricing-simulation' }
                         ]}
                     </SidebarItem>
 
@@ -204,6 +207,25 @@ const Sidebar = () => {
                             { label: 'Settings', to: '/admin/flights/settings' },
                         ]}
                     </SidebarItem>
+
+                    <SidebarItem icon={Train} label="Train">
+                        {[
+                            { label: 'Dashboard', to: '/admin/train/dashboard' },
+                            { label: 'All Trains', to: '/admin/train/all' },
+                            { label: 'Add Train', to: '/admin/train/add' },
+                            { label: 'Routes & Schedule', to: '/admin/train/routes' },
+                            { label: 'Stations', to: '/admin/train/stations' },
+                            { label: 'Seat & Coach', to: '/admin/train/seat-coach' },
+                            { label: 'Fare Management', to: '/admin/train/fare' },
+                            { label: 'Bookings', to: '/admin/train/bookings' },
+                            { label: 'PNR System', to: '/admin/train/pnr' },
+                            { label: 'API Settings', to: '/admin/train/api-settings' },
+                            { label: 'Quota Management', to: '/admin/train/quota' },
+                            { label: 'Reports', to: '/admin/train/reports' }
+                        ]}
+                    </SidebarItem>
+
+
 
                     <div className="pt-6 pb-2 px-4">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Support</p>

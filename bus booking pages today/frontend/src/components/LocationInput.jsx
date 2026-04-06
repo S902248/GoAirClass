@@ -66,7 +66,7 @@ const LocationInput = ({ value, onChange, placeholder, label }) => {
                     const lat = place.geometry.location.lat();
                     const lng = place.geometry.location.lng();
                     const name = place.formatted_address || place.name;
-                    
+
                     onChange({
                         location: name,
                         lat,

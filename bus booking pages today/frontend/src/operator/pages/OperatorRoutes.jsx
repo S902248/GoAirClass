@@ -153,7 +153,10 @@ const OperatorRoutes = () => {
                                         </td>
                                         <td className="px-8 py-6 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <button className="w-10 h-10 bg-gray-50 text-gray-400 rounded-xl flex items-center justify-center hover:bg-white hover:text-blue-500 transition-all hover:shadow-lg active:scale-95 border border-transparent hover:border-gray-100">
+                                                <button
+                                                    onClick={() => navigate(`/operator/routes/edit/${route._id}`)}
+                                                    title="Edit Route"
+                                                    className="w-10 h-10 bg-gray-50 text-gray-400 rounded-xl flex items-center justify-center hover:bg-white hover:text-blue-500 transition-all hover:shadow-lg active:scale-95 border border-transparent hover:border-gray-100">
                                                     <Edit className="h-4 w-4" />
                                                 </button>
                                                 <button

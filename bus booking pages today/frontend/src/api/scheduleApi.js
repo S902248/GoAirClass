@@ -45,3 +45,23 @@ export const searchSchedules = async (searchParams) => {
         throw error.response ? error.response.data : new Error('Network Error');
     }
 };
+
+// Get single schedule / trip details
+export const getSchedule = async (scheduleId) => {
+    try {
+        const response = await Axios.get(`/schedules/${scheduleId}`);
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};
+
+// Get passenger bookings for a schedule
+export const getSchedulePassengers = async (scheduleId) => {
+    try {
+        const response = await Axios.get(`/schedules/${scheduleId}/passengers`);
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};

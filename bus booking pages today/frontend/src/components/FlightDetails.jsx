@@ -13,7 +13,7 @@ const FlightDetails = ({ flight, onClose, onBook }) => {
             {/* Backdrop click to close */}
             <div className="absolute inset-0" onClick={onClose}></div>
             
-            <div className="bg-white w-full lg:w-3/4 h-full shadow-[-20px_0_50px_rgba(0,0,0,0.1)] flex flex-col relative z-10 overflow-hidden animate-slide-in-right">
+            <div className="bg-white w-full lg:w-3/4 h-full shadow-[-20px_0_50px_rgba(0_0_0_/_0.1)] flex flex-col relative z-10 overflow-hidden animate-slide-in-right">
                 
                 {/* Premium Header */}
                 <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 shrink-0 sticky top-0 z-20">
@@ -48,7 +48,7 @@ const FlightDetails = ({ flight, onClose, onBook }) => {
                             >
                                 {tab}
                                 {activeTab === tab && (
-                                    <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#003580] rounded-t-full shadow-[0_-4px_10px_rgba(0,53,128,0.2)]" />
+                                    <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#003580] rounded-t-full shadow-[0_-4px_10px_rgba(0_53_128_/_0.2)]" />
                                 )}
                             </button>
                         ))}
@@ -251,7 +251,7 @@ const FlightDetails = ({ flight, onClose, onBook }) => {
                 </div>
 
                 {/* Bottom Action Section */}
-                <div className="bg-white border-t border-gray-100 px-8 py-6 shrink-0 z-30 shadow-[0_-20px_50px_rgba(0,0,0,0.02)]">
+                <div className="bg-white border-t border-gray-100 px-8 py-6 shrink-0 z-30 shadow-[0_-20px_50px_rgba(0_0_0_/_0.02)]">
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 italic">Exclusive Fare</p>

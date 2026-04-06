@@ -26,3 +26,23 @@ export const deleteRoute = async (routeId) => {
         throw error.response ? error.response.data : new Error('Network Error');
     }
 };
+
+// Get single route by ID
+export const getRoute = async (routeId) => {
+    try {
+        const response = await Axios.get(`/routes/${routeId}`);
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};
+
+// Update a route
+export const updateRoute = async (routeId, data) => {
+    try {
+        const response = await Axios.put(`/routes/${routeId}`, data);
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};

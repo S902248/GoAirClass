@@ -62,7 +62,20 @@ router.post('/create', operatorAuthMiddleware, upload.array('images', 6), async 
 // Get by Operator (Current logged-in operator)
 router.get('/my-buses', operatorAuthMiddleware, async (req, res) => {
     try {
-        const buses = await Bus.find({ operator: req.operator.id });
+        const { routeIds } = req.query;
+        let query = { operator: req.operator.id };
+
+        if (routeIds) {
+            const Schedule = require('../models/Schedule');
+            const schedules = await Schedule.find({ 
+                operator: req.operator.id, 
+                route: { $in: routeIds.split(',') } 
+            });
+            const busIds = schedules.map(s => s.bus);
+            query._id = { $in: busIds };
+        }
+
+        const buses = await Bus.find(query);
         res.json(buses);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -72,36 +85,46 @@ router.get('/my-buses', operatorAuthMiddleware, async (req, res) => {
 // Get All (For Admin) — scoped by adminId for 'admin' role, all for 'superadmin'
 router.get('/all', async (req, res) => {
     try {
-        // Try to get auth token if present (optional auth)
-        const token = req.header('Authorization')?.replace('Bearer ', '');
-        let userRole = 'superadmin'; // default: no token = superadmin scope (backward compat)
-        let userId = null;
-
-        if (token) {
-            try {
-                const jwt = require('jsonwebtoken');
-                const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-                userRole = decoded.role;
-                userId = decoded.id;
-            } catch (_) { }
-        }
-
-        if (userRole === 'admin' && userId) {
-            // Step 1: get operator IDs for this admin
-            const Operator = require('../models/Operator');
-            const mongoose = require('mongoose');
-            const adminObjId = new mongoose.Types.ObjectId(userId);
-            const operators = await Operator.find({ adminId: adminObjId }, '_id');
-            const operatorIds = operators.map(op => op._id);
-
-            // Step 2: get buses belonging to those operators
-            const buses = await Bus.find({ operator: { $in: operatorIds } }).populate('operator');
-            return res.json(buses);
-        }
-
-        // superadmin or unauthenticated: return all
         const buses = await Bus.find().populate('operator');
         res.json(buses);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/buses - Aggregated for Sandbox
+router.get('/', async (req, res) => {
+    try {
+        const Schedule = require('../models/Schedule');
+        const schedules = await Schedule.find()
+            .populate('bus')
+            .populate('route')
+            .populate('operator');
+        
+        const mergedData = schedules.map(s => ({
+            _id: s.bus?._id,
+            busName: s.bus?.busName || 'Unknown Bus',
+            busType: s.bus?.busType || 'Sleeper',
+            seatType: (s.bus?.amenities || []).some(a => a.toUpperCase().includes('AC')) ? 'AC' : 'Non-AC',
+            operatorId: s.operator?._id,
+            fromCity: s.route?.fromCity,
+            toCity: s.route?.toCity,
+            distance: s.route?.distance,
+            baseFare: s.ticketPrice
+        })).filter(item => item._id); // Only return buses with schedules
+
+        res.json(mergedData);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get Single Bus by ID (for View/Edit pages)
+router.get('/:id', async (req, res) => {
+    try {
+        const bus = await Bus.findById(req.params.id).populate('operator');
+        if (!bus) return res.status(404).json({ error: 'Bus not found' });
+        res.json(bus);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Tag, Plus, Trash2 } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import Axios from '../../../api/Axios';
 
 const FlightOffers = () => {
     const [offers, setOffers] = useState([]);
@@ -11,26 +10,31 @@ const FlightOffers = () => {
 
     const load = async () => {
         setLoading(true);
-        const res = await fetch(`${API}/api/flight-offers`);
-        const data = await res.json();
-        setOffers(data.offers || []);
-        setLoading(false);
+        try {
+            const res = await Axios.get('/flight-offers');
+            setOffers(res.data.offers || []);
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => { load(); }, []);
 
     const submit = async (e) => {
         e.preventDefault();
-        await fetch(`${API}/api/flight-offers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
-        setForm({ title: '', couponCode: '', discountType: 'Percentage', discountValue: '', expiryDate: '' });
-        setShowForm(false);
-        load();
+        try {
+            await Axios.post('/flight-offers', form);
+            setForm({ title: '', couponCode: '', discountType: 'Percentage', discountValue: '', expiryDate: '' });
+            setShowForm(false);
+            load();
+        } catch (e) { console.error(e); }
     };
 
     const deleteOffer = async (id) => {
         if (!window.confirm('Delete this offer?')) return;
-        await fetch(`${API}/api/flight-offers/${id}`, { method: 'DELETE' });
-        load();
+        try {
+            await Axios.delete(`/flight-offers/${id}`);
+            load();
+        } catch (e) { console.error(e); }
     };
 
     return (

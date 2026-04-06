@@ -58,7 +58,7 @@ const HotelHero = ({ setView }) => {
                 {/* Main Search Widget */}
                 <div className="w-full flex-col animate-fade-in-up opacity-0 [animation-fill-mode:forwards] [animation-delay:600ms]">
                     {/* Form Fields Row */}
-                    <div className="flex flex-col lg:flex-row w-full bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-2xl overflow-hidden border border-white/20">
+                    <div className="flex flex-col lg:flex-row w-full bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0_0_0_/_0.3)] rounded-2xl overflow-hidden border border-white/20">
 
                         {/* Destination */}
                         <div className="flex lg:w-[35%] relative bg-transparent">
@@ -117,7 +117,7 @@ const HotelHero = ({ setView }) => {
                         {/* Search Button */}
                         <button
                             onClick={handleSearch}
-                            className="bg-gradient-to-r from-[#f26a36] to-[#ff8c5a] hover:to-[#f26a36] text-white px-10 py-6 lg:py-0 font-black text-sm tracking-widest transition-all hover:shadow-[0_0_30px_rgba(242,106,54,0.4)] active:scale-[0.98] flex items-center justify-center min-w-[160px]"
+                            className="bg-gradient-to-r from-[#f26a36] to-[#ff8c5a] hover:to-[#f26a36] text-white px-10 py-6 lg:py-0 font-black text-sm tracking-widest transition-all hover:shadow-[0_0_30px_rgba(242_106_54_/_0.4)] active:scale-[0.98] flex items-center justify-center min-w-[160px]"
                         >
                             SEARCH
                         </button>
@@ -139,7 +139,7 @@ const HotelHero = ({ setView }) => {
                                     className="flex items-center cursor-pointer group transition-all"
                                 >
                                     <div className={`w-5 h-5 rounded-lg mr-3 flex items-center justify-center transition-all border-2 ${tagFilters[fare.id]
-                                        ? 'bg-[#f26a36] border-[#f26a36] shadow-[0_0_10px_rgba(242,106,54,0.3)]'
+                                        ? 'bg-[#f26a36] border-[#f26a36] shadow-[0_0_10px_rgba(242_106_54_/_0.3)]'
                                         : 'bg-white/10 border-white/20 group-hover:border-white/40'
                                         }`}>
                                         {tagFilters[fare.id] && <Check className="h-3 w-3 text-white" strokeWidth={4} />}

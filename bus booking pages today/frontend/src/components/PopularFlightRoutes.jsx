@@ -63,7 +63,7 @@ const PopularFlightRoutes = () => {
                     {destinations.map((dest, index) => (
                         <div
                             key={index}
-                            className="group relative bg-white rounded-[48px] p-4 border border-gray-100 transition-all duration-700 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] hover:-translate-y-2"
+                            className="group relative bg-white rounded-[48px] p-4 border border-gray-100 transition-all duration-700 hover:shadow-[0_40px_80px_-20px_rgba(0_0_0_/_0.1)] hover:-translate-y-2"
                         >
                             <div className="relative h-64 rounded-[36px] overflow-hidden">
                                 <img
@@ -111,7 +111,7 @@ const PopularFlightRoutes = () => {
                             </div>
 
                             {/* Card Glow Effect */}
-                            <div className="absolute inset-0 rounded-[48px] shadow-[0_0_40px_rgba(37,99,235,0)] group-hover:shadow-[0_0_40px_rgba(37,99,235,0.05)] transition-all duration-700 pointer-events-none" />
+                            <div className="absolute inset-0 rounded-[48px] shadow-[0_0_40px_rgba(37_99_235_/_0)] group-hover:shadow-[0_0_40px_rgba(37_99_235_/_0.05)] transition-all duration-700 pointer-events-none" />
                         </div>
                     ))}
                 </div>

@@ -7,6 +7,7 @@ import { DatePicker, ConfigProvider } from 'antd';
 import dayjs from 'dayjs';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import AdCarousel from './ads/AdCarousel';
 
 const Hero = ({ setSearchParams }) => {
     const navigate = useNavigate();
@@ -148,15 +149,17 @@ const Hero = ({ setSearchParams }) => {
                                 Arrive with Style.
                             </span>
                         </h1>
-                        <p className="text-lg text-slate-300 font-medium max-w-lg leading-relaxed animate-fade-in-up opacity-0 [animation-fill-mode:forwards] [animation-delay:400ms]">
-                            Luxury intercity travel made simple. Book your premium bus experience with GOAIRCLASS.
-                        </p>
+                    </div>
+
+                    {/* Ad Carousel Placement */}
+                    <div className="w-full animate-fade-in-up opacity-0 [animation-fill-mode:forwards] [animation-delay:500ms]">
+                        <AdCarousel position="HomepageTop" />
                     </div>
 
                     {/* Main Search Widget */}
                     <div className="w-full flex-col animate-fade-in-up opacity-0 [animation-fill-mode:forwards] [animation-delay:600ms]">
                         {/* Form Fields Row */}
-                        <div className="flex flex-col lg:flex-row w-full bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-2xl border border-white/20">
+                        <div className="flex flex-col lg:flex-row w-full bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0_0_0_/_0.3)] rounded-2xl border border-white/20">
 
                             {/* From & To (Combined block with divider/swap) */}
                             <div className="flex lg:w-[45%] relative bg-transparent">
@@ -178,7 +181,7 @@ const Hero = ({ setSearchParams }) => {
 
                                         {/* From Suggestions Dropdown */}
                                         {showFromSuggestions && (
-                                            <div className="absolute top-[calc(100%+15px)] left-[-60px] w-[300px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-100 z-[100] max-h-[300px] overflow-y-auto overflow-x-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <div className="absolute top-[calc(100%+15px)] left-[-60px] w-[300px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0_0_0_/_0.15)] border border-slate-100 z-[100] max-h-[300px] overflow-y-auto overflow-x-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                                                 {fromSuggestions.map((city) => (
                                                     <div
                                                         key={city._id}
@@ -226,7 +229,7 @@ const Hero = ({ setSearchParams }) => {
 
                                         {/* To Suggestions Dropdown */}
                                         {showToSuggestions && (
-                                            <div className="absolute top-[calc(100%+15px)] left-[-40px] w-[300px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-slate-100 z-[100] max-h-[300px] overflow-y-auto overflow-x-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <div className="absolute top-[calc(100%+15px)] left-[-40px] w-[300px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0_0_0_/_0.15)] border border-slate-100 z-[100] max-h-[300px] overflow-y-auto overflow-x-hidden py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                                                 {toSuggestions.map((city) => (
                                                     <div
                                                         key={city._id}
@@ -283,7 +286,7 @@ const Hero = ({ setSearchParams }) => {
                             {/* Search Button */}
                             <button
                                 onClick={handleSearch}
-                                className="bg-gradient-to-r from-[#f26a36] to-[#ff8c5a] hover:to-[#f26a36] text-white px-10 py-6 lg:py-0 font-black text-sm tracking-widest transition-all hover:shadow-[0_0_30px_rgba(242,106,54,0.4)] active:scale-[0.98] flex items-center justify-center min-w-[160px]"
+                                className="bg-gradient-to-r from-[#f26a36] to-[#ff8c5a] hover:to-[#f26a36] text-white px-10 py-6 lg:py-0 font-black text-sm tracking-widest transition-all hover:shadow-[0_0_30px_rgba(242_106_54_/_0.4)] active:scale-[0.98] flex items-center justify-center min-w-[160px]"
                             >
                                 SEARCH
                             </button>

@@ -18,7 +18,7 @@ const AllBookings = () => {
         { key: 'status', label: 'Status' },
     ];
 
-    const filterOptions = ['All', 'Bus', 'Train', 'Flight', 'Hotel'];
+    const filterOptions = ['All', 'Bus', 'Flight', 'Hotel'];
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 font-sans pb-8">

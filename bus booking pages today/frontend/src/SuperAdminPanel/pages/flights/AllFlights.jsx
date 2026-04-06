@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plane, Search, Plus, Trash2, Edit3 } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import Axios from '../../../api/Axios';
 
 const AllFlights = () => {
     const [flights, setFlights] = useState([]);
@@ -11,9 +10,8 @@ const AllFlights = () => {
     const fetchFlights = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`${API}/api/flights`);
-            const data = await res.json();
-            setFlights(data.flights || []);
+            const res = await Axios.get('/flights');
+            setFlights(res.data.flights || []);
         } catch (err) {
             console.error('Error fetching flights:', err);
         } finally {
@@ -25,8 +23,12 @@ const AllFlights = () => {
 
     const deleteFlight = async (id) => {
         if (!window.confirm('Delete this flight?')) return;
-        await fetch(`${API}/api/flights/${id}`, { method: 'DELETE' });
-        fetchFlights();
+        try {
+            await Axios.delete(`/flights/${id}`);
+            fetchFlights();
+        } catch (err) {
+            console.error('Error deleting flight:', err);
+        }
     };
 
     const filtered = flights.filter(f =>

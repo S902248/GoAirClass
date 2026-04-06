@@ -23,6 +23,8 @@ import TrainResults from './components/TrainResults'
 import TrainReview from './components/TrainReview'
 import TrainPassengerDetails from './components/TrainPassengerDetails'
 import TrainPayment from './components/TrainPayment'
+import TrainBooking from './components/TrainBooking'
+import TrainSuccess from './components/TrainSuccess'
 import HotelHero from './components/HotelHero'
 import FeaturedHotels from './components/FeaturedHotels'
 import PopularHotelDestinations from './components/PopularHotelDestinations'
@@ -39,7 +41,10 @@ import BookingSuccess from './components/BookingSuccess'
 import AuthModal from './components/AuthModal'
 import AccessDenied from './components/AccessDenied'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdPopup from './components/ads/AdPopup';
+import GlobalBanner from './components/GlobalBanner';
 
+import BusTicket from './components/BusTicket';
 import TrackTicket from './components/TrackTicket'
 import Support from './components/Support'
 import LegalPage from './components/LegalPage'
@@ -51,6 +56,10 @@ import FlightPassengerDetails from './components/FlightPassengerDetails'
 import FlightPayment from './components/FlightPayment'
 import FlightBookingFlow from './components/FlightBookingFlow'
 import FlightBookingConfirmation from './components/FlightBookingConfirmation'
+import FlightTicket from './components/FlightTicket'
+import FlightCancel from './components/FlightCancel'
+import TicketVerification from './components/TicketVerification'
+import CancelledBookings from './components/CancelledBookings'
 
 import { Provider } from 'react-redux'
 import { store } from './SuperAdminPanel/store.js'
@@ -156,12 +165,13 @@ function App() {
         '/flight-results', '/flight-review',
         '/flight-passengers', '/flight-payment', '/flight-booking', '/train-results', '/train-review',
         '/train-passengers', '/train-payment', '/hotel-results', '/hotel-review',
-        '/hotel-passengers', '/hotel-payment', '/hotel-booking-confirmation'
+        '/hotel-passengers', '/hotel-payment', '/hotel-booking-confirmation', '/ticket/verify'
     ];
     const isLightHero = lightBackgroundRoutes.includes(location.pathname)
         || location.pathname.startsWith('/legal')
         || location.pathname.startsWith('/payment/')
         || location.pathname.startsWith('/hotel/')
+        || location.pathname.startsWith('/ticket/')
         || location.pathname.startsWith('/hotel-booking/');
     const isBusResults = location.pathname === '/bus-results';
     const isDashboardPath = location.pathname.startsWith('/admin') ||
@@ -171,7 +181,9 @@ function App() {
 
     return (
         <div className="min-h-screen bg-white overflow-x-hidden">
-            {!isDashboardPath && !isSeatOverlayOpen && location.pathname !== '/flight-results' && (
+            {!isDashboardPath && <AdPopup />}
+            {!isDashboardPath && <GlobalBanner />}
+            {!isDashboardPath && !isSeatOverlayOpen && location.pathname !== '/flight-results' && location.pathname !== '/train-results' && (
                 <Navbar
                     setView={handleNavigate}
                     activeTab={activeTab}
@@ -259,7 +271,7 @@ function App() {
                             onSuccess={(info) => {
                                 setPaymentInfo(info);
                                 setIsSeatOverlayOpen(false);
-                                navigate('/booking-confirmation');
+                                navigate(`/ticket/${info.bookingId}`);
                             }}
                         />
                     } />
@@ -276,7 +288,7 @@ function App() {
                             onSuccess={(info) => {
                                 setPaymentInfo(info);
                                 setIsSeatOverlayOpen(false);
-                                navigate('/booking-confirmation');
+                                navigate(`/ticket/${info.bookingId}`);
                             }}
                         />
                     } />
@@ -312,6 +324,7 @@ function App() {
 
                     <Route path="/cancel-ticket/:bookingId" element={<CancelTicket />} />
                     <Route path="/cancel-hotel/:bookingId" element={<CancelHotel />} />
+                    <Route path="/cancel" element={<CancelledBookings setView={handleNavigate} />} />
                     <Route path="/change-date" element={<ChangeTravelDate />} />
                     <Route path="/track-ticket" element={<TrackTicket />} />
                     <Route path="/email-sms" element={<TrackTicket isEmailSmsMode={true} />} />
@@ -321,6 +334,8 @@ function App() {
                     <Route path="/legal/:type" element={<LegalPage />} />
                     <Route path="/flight-results" element={<FlightResults setView={handleNavigate} />} />
                     <Route path="/flight-confirmation/:bookingId" element={<FlightBookingConfirmation />} />
+                    <Route path="/flight-ticket/:pnr" element={<FlightTicket />} />
+                    <Route path="/flight/cancel/:bookingId" element={<FlightCancel />} />
 
                     {/* Deprecated: Old flight routes now handled by FlightBookingFlow */}
                     <Route path="/flight-review" element={<Navigate to="/flight-booking" replace />} />
@@ -330,6 +345,10 @@ function App() {
                     <Route path="/train-review" element={<TrainReview setView={handleNavigate} />} />
                     <Route path="/train-passengers" element={<TrainPassengerDetails setView={handleNavigate} />} />
                     <Route path="/train-payment" element={<TrainPayment setView={handleNavigate} />} />
+                    <Route path="/booking" element={<TrainBooking />} />
+                    <Route path="/train-success/:bookingId" element={<TrainSuccess />} />
+                    <Route path="/ticket/verify/:pnr" element={<TicketVerification />} />
+                    <Route path="/ticket/:pnr" element={<BusTicket />} />
                     <Route path="/hotel-results" element={<HotelResults setView={handleNavigate} />} />
                     <Route path="/hotel/:hotelId" element={<HotelDetails setView={handleNavigate} />} />
                     <Route path="/hotel-booking/:hotelId" element={<HotelBooking />} />

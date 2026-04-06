@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Bus, Star, Tag, Clock, MapPin, ChevronRight, Info, ShieldCheck, Wifi, Coffee, Power, User, Users, UserRound, GraduationCap, Armchair, ChevronDown, Wind, Snowflake, Zap, Tv, Moon, Check } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -25,7 +25,13 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
     const [selectedDeck, setSelectedDeck] = useState('lower');
     const [activeInfoTab, setActiveInfoTab] = useState('Why book this bus?');
 
-    const [primaryPassenger, setPrimaryPassenger] = useState({ name: '', age: '', gender: 'Male' });
+    // Women-only booking: initialized from search params, can also be toggled on this page
+    const [isWomenOnly, setIsWomenOnly] = useState(!!(searchParams?.womenBooking));
+    const [primaryPassenger, setPrimaryPassenger] = useState({
+        name: '',
+        age: '',
+        gender: searchParams?.womenBooking ? 'Female' : 'Male'
+    });
     const [contactDetails, setContactDetails] = useState({ phone: '', email: '', state: '' });
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponInput, setCouponInput] = useState('');
@@ -38,7 +44,7 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
     React.useEffect(() => {
         if (isOpen && bus) {
             const currentBusId = bus.id || bus._id;
-            
+
             // Only reset these if the actual bus changed, not if just coordinates/distances updated
             if (prevBusIdRef.current !== currentBusId) {
                 console.log(">>> [FRONTEND] Bus ID changed or first open, resetting state");
@@ -106,6 +112,13 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
         }
     }, [isLoggedIn, bus]);
 
+    // When isWomenOnly is toggled ON => force Female gender
+    useEffect(() => {
+        if (isWomenOnly) {
+            setPrimaryPassenger(prev => ({ ...prev, gender: 'Female' }));
+        }
+    }, [isWomenOnly]);
+
     // Process Seat Layout from Database or Fallback to Mock
     const processedLayout = React.useMemo(() => {
         const bookedSeatsMap = bookedSeats.reduce((acc, s) => {
@@ -127,7 +140,9 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                     label: s.seatNo,
                     isOccupied: !!bookedGender,
                     bookedGender: bookedGender,
-                    price: s.price ? s.price : (s.type === 'sleeper' ? (s.deck === 'upper' ? 1500 : 1600) : 850),
+                    basePrice: s.baseFare || bus.baseFare || s.price || 0,
+                    commission: s.commission || bus.commissionApplied || 0,
+                    price: s.finalPrice || s.ticketPrice || bus.price || 0,
                     type: s.type,
                     deck: s.deck,
                     row: Math.floor(deckIdx / cols) + 1,
@@ -206,17 +221,24 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
         });
     };
 
-    const baseFare = selectedSeats.reduce((acc, seatId) => {
+    const selectedTotalBase = selectedSeats.reduce((acc, seatId) => {
         const seat = processedLayout.find(s => s.id === seatId);
-        return acc + (seat?.price || 0);
+        return acc + (seat?.basePrice || 0);
     }, 0);
-    const gst = Math.round(baseFare * 0.05); // 5% GST
+
+    const selectedTotalCommission = selectedSeats.reduce((acc, seatId) => {
+        const seat = processedLayout.find(s => s.id === seatId);
+        return acc + (seat?.commission || 0);
+    }, 0);
+
+    const activeBaseFare = selectedTotalBase + selectedTotalCommission;
+    const gst = Math.round(activeBaseFare * 0.02); // 2% GST
     const discount = appliedCoupon
         ? (appliedCoupon.discountType === 'percent'
-            ? Math.round(baseFare * appliedCoupon.discountValue / 100)
+            ? Math.round(activeBaseFare * appliedCoupon.discountValue / 100)
             : appliedCoupon.discountValue)
         : 0;
-    const totalPrice = Math.max(0, baseFare + gst - discount);
+    const totalPrice = Math.max(0, activeBaseFare + gst - discount);
 
     const getSeatColor = (seat, isSelected) => {
         if (seat.isOccupied) {
@@ -595,6 +617,7 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                             <div className="text-right">
                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">TOTAL FARE</p>
                                                 <p className="text-2xl font-black text-gray-900 leading-none">₹{totalPrice}</p>
+                                                <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tighter">Incl. ₹{gst} GST (2%)</p>
                                             </div>
                                         </div>
 
@@ -630,10 +653,10 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                             <h4 className="text-xl font-black text-gray-800 tracking-tight uppercase">Boarding Points</h4>
                                             {(() => {
                                                 const points = (bus.boardingPoints || []).filter(p => p.distance !== null);
-                                                const nearest = points.length > 0 ? points.reduce((prev, curr) => 
+                                                const nearest = points.length > 0 ? points.reduce((prev, curr) =>
                                                     parseFloat(curr.distance) < parseFloat(prev.distance) ? curr : prev
                                                 ) : null;
-                                                
+
                                                 if (nearest) {
                                                     return (
                                                         <div className="bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl flex items-center gap-2 animate-bounce-subtle">
@@ -657,7 +680,7 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                                     if (b.distance === null) return -1;
                                                     return parseFloat(a.distance) - parseFloat(b.distance);
                                                 });
-                                                
+
                                                 const nearest = sorted.find(p => p.distance !== null && parseFloat(p.distance) === minDistance);
                                                 const others = sorted.filter(p => p !== nearest);
 
@@ -778,6 +801,7 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                         <div className="text-right">
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">TOTAL FARE</p>
                                             <p className="text-2xl font-black text-gray-900 leading-none">₹{totalPrice}</p>
+                                            <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tighter">Incl. ₹{gst} GST (2%)</p>
                                         </div>
                                     </div>
                                     <button
@@ -803,7 +827,45 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                 <div className="space-y-6">
                                     {/* Passenger Details Card */}
                                     <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm p-6 sm:p-8">
-                                        <h4 className="text-2xl font-black text-gray-800 tracking-tight font-outfit mb-6">Passenger details</h4>
+                                        {/* Header: title + Women-Only Toggle */}
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h4 className="text-2xl font-black text-gray-800 tracking-tight font-outfit">Passenger details</h4>
+                                            <label className="flex items-center gap-2.5 cursor-pointer group select-none">
+                                                <div className="text-right hidden sm:block">
+                                                    <span className="text-[12px] font-bold text-gray-800 block leading-tight">Booking for Women</span>
+                                                    <span className="text-[10px] font-semibold text-[#108ece] group-hover:underline">
+                                                        {isWomenOnly ? 'Women-only mode' : 'Know more'}
+                                                    </span>
+                                                </div>
+                                                <div className="relative inline-flex items-center cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="sr-only peer"
+                                                        checked={isWomenOnly}
+                                                        onChange={() => setIsWomenOnly(prev => !prev)}
+                                                    />
+                                                    <div className="w-11 h-6 bg-gray-300 rounded-full peer
+                                                        peer-checked:after:translate-x-full peer-checked:after:border-white
+                                                        after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+                                                        after:bg-white after:border-gray-300 after:border after:rounded-full
+                                                        after:h-5 after:w-5 after:transition-all
+                                                        peer-checked:bg-[#D84E55] transition-colors duration-300" />
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        {/* Women-Only Helper Banner */}
+                                        {isWomenOnly && (
+                                            <div className="flex items-center gap-3 px-4 py-3 mb-5 bg-pink-50 border border-pink-200 rounded-2xl">
+                                                <div className="w-7 h-7 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0">
+                                                    <Info className="h-4 w-4 text-pink-500" />
+                                                </div>
+                                                <p className="text-[11px] font-bold text-pink-700">
+                                                    Only female passengers allowed for this booking. Male option is disabled.
+                                                </p>
+                                            </div>
+                                        )}
+
                                         {/* Primary Passenger Form Only */}
                                         <div className="space-y-8">
                                             <div className="space-y-4">
@@ -832,18 +894,51 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                                         <label className="absolute left-4 top-2 text-[11px] font-semibold text-gray-500 transition-all peer-placeholder-shown:text-[15px] peer-placeholder-shown:top-4 peer-focus:top-2 peer-focus:text-[11px] pointer-events-none">Age *</label>
                                                     </div>
 
+                                                    {/* Gender — smart behavior when isWomenOnly */}
                                                     <div className="space-y-3">
                                                         <label className="text-[13px] font-semibold text-gray-500 ml-1">Gender *</label>
-                                                        <div className="flex gap-4">
-                                                            <label className="flex-1 flex items-center justify-between bg-white border border-gray-300 rounded-2xl px-5 py-3.5 cursor-pointer hover:border-gray-400 transition-all select-none has-[:checked]:border-gray-800 has-[:checked]:bg-gray-50 group">
-                                                                <span className="text-[15px] font-semibold text-gray-800 group-has-[:checked]:font-bold">Male</span>
-                                                                <input type="radio" name="primary-gender" checked={primaryPassenger.gender === 'Male'} onChange={() => setPrimaryPassenger({ ...primaryPassenger, gender: 'Male' })} className="hidden" />
-                                                                <div className="w-[22px] h-[22px] rounded-full border-2 border-gray-300 group-has-[:checked]:border-[6px] group-has-[:checked]:border-gray-800 transition-all"></div>
+                                                        <div className={`flex gap-4 rounded-2xl transition-colors duration-300 ${isWomenOnly ? 'p-1 bg-pink-50 border border-pink-200' : ''}`}>
+                                                            {/* Male — disabled when isWomenOnly */}
+                                                            <label className={`flex-1 flex items-center justify-between rounded-2xl px-5 py-3.5 select-none transition-all duration-300
+                                                                ${isWomenOnly
+                                                                    ? 'bg-gray-100 border border-gray-200 opacity-50 cursor-not-allowed'
+                                                                    : 'bg-white border border-gray-300 cursor-pointer hover:border-gray-400 has-[:checked]:border-gray-800 has-[:checked]:bg-gray-50 group'
+                                                                }`}>
+                                                                <span className={`text-[15px] font-semibold ${isWomenOnly ? 'text-gray-400' : 'text-gray-800'}`}>Male</span>
+                                                                <input
+                                                                    type="radio"
+                                                                    name="primary-gender"
+                                                                    disabled={isWomenOnly}
+                                                                    checked={primaryPassenger.gender === 'Male'}
+                                                                    onChange={() => !isWomenOnly && setPrimaryPassenger({ ...primaryPassenger, gender: 'Male' })}
+                                                                    className="hidden"
+                                                                />
+                                                                <div className={`w-[22px] h-[22px] rounded-full border-2 transition-all
+                                                                    ${primaryPassenger.gender === 'Male' && !isWomenOnly ? 'border-[6px] border-gray-800' : 'border-gray-300'}`}></div>
                                                             </label>
-                                                            <label className="flex-1 flex items-center justify-between bg-white border border-gray-300 rounded-2xl px-5 py-3.5 cursor-pointer hover:border-gray-400 transition-all select-none has-[:checked]:border-gray-800 has-[:checked]:bg-gray-50 group">
-                                                                <span className="text-[15px] font-semibold text-gray-800 group-has-[:checked]:font-bold">Female</span>
-                                                                <input type="radio" name="primary-gender" checked={primaryPassenger.gender === 'Female'} onChange={() => setPrimaryPassenger({ ...primaryPassenger, gender: 'Female' })} className="hidden" />
-                                                                <div className="w-[22px] h-[22px] rounded-full border-2 border-gray-300 group-has-[:checked]:border-[6px] group-has-[:checked]:border-gray-800 transition-all"></div>
+                                                            {/* Female — highlighted when isWomenOnly */}
+                                                            <label className={`flex-1 flex items-center justify-between rounded-2xl px-5 py-3.5 cursor-pointer select-none transition-all duration-300
+                                                                ${primaryPassenger.gender === 'Female'
+                                                                    ? isWomenOnly
+                                                                        ? 'bg-pink-50 border-2 border-[#D84E55] shadow-md shadow-pink-200/60'
+                                                                        : 'bg-gray-50 border-2 border-gray-800'
+                                                                    : 'bg-white border border-gray-300 hover:border-gray-400'
+                                                                }`}>
+                                                                <span className={`text-[15px] font-semibold transition-colors duration-300
+                                                                    ${primaryPassenger.gender === 'Female' ? 'font-bold text-gray-900' : 'text-gray-800'}`}>
+                                                                    Female
+                                                                </span>
+                                                                <input
+                                                                    type="radio"
+                                                                    name="primary-gender"
+                                                                    checked={primaryPassenger.gender === 'Female'}
+                                                                    onChange={() => setPrimaryPassenger({ ...primaryPassenger, gender: 'Female' })}
+                                                                    className="hidden"
+                                                                />
+                                                                <div className={`w-[22px] h-[22px] rounded-full border-2 transition-all
+                                                                    ${primaryPassenger.gender === 'Female'
+                                                                        ? isWomenOnly ? 'border-[6px] border-[#D84E55]' : 'border-[6px] border-gray-800'
+                                                                        : 'border-gray-300'}`}></div>
                                                             </label>
                                                         </div>
                                                     </div>
@@ -963,10 +1058,32 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                             </div>
                                         </div>
 
-                                        <div className="flex items-end justify-between border-t border-gray-100 pt-6 mb-6">
-                                            <div>
-                                                <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">TOTAL FARE</p>
-                                                <p className="text-3xl font-black text-gray-900 leading-none">₹{totalPrice}</p>
+                                        <div className="border-t border-gray-100 pt-6 mb-6">
+                                            <div className="space-y-2 mb-4">
+                                                <div className="flex justify-between text-[11px] font-bold text-gray-500 uppercase tracking-widest">
+                                                    <span>Base Fare</span>
+                                                    <span>₹{selectedTotalBase}</span>
+                                                </div>
+                                                <div className="flex justify-between text-[11px] font-bold text-gray-500 uppercase tracking-widest">
+                                                    <span>Platform Fee</span>
+                                                    <span>₹{selectedTotalCommission}</span>
+                                                </div>
+                                                <div className="flex justify-between text-[11px] font-bold text-gray-500 uppercase tracking-widest">
+                                                    <span>GST (2%)</span>
+                                                    <span>₹{gst}</span>
+                                                </div>
+                                                {discount > 0 && (
+                                                    <div className="flex justify-between text-[11px] font-bold text-emerald-600 uppercase tracking-widest">
+                                                        <span>Discount</span>
+                                                        <span>-₹{discount}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex items-end justify-between">
+                                                <div>
+                                                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">TOTAL PAYABLE</p>
+                                                    <p className="text-3xl font-black text-gray-900 leading-none">₹{totalPrice}</p>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -984,6 +1101,11 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                                         toast.error("Please fill all primary passenger details", { position: "top-right", theme: "colored" });
                                                         return;
                                                     }
+                                                    // Women-only validation
+                                                    if (isWomenOnly && primaryPassenger.gender !== 'Female') {
+                                                        toast.error("Only female passengers allowed for this booking.", { position: "top-right", theme: "colored" });
+                                                        return;
+                                                    }
                                                     if (!contactDetails.phone || !contactDetails.email || !contactDetails.state) {
                                                         toast.error("Please fill all contact details including state", { position: "top-right", theme: "colored" });
                                                         return;
@@ -995,6 +1117,8 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                                     const params = new URLSearchParams(window.location.search);
                                                     let urlDate = params.get('date');
                                                     let finalJourneyDate = urlDate ? formatDateToYYYYMMDD(urlDate) : (formatDateToYYYYMMDD(searchParams?.date || bus?.departureDate) || new Date().toISOString().split('T')[0]);
+                                                    const totalCommission = seatsMapped.reduce((acc, s) => acc + (s.commission || 0), 0);
+                                                    const totalBaseFare = seatsMapped.reduce((acc, s) => acc + (s.basePrice || s.price || 0), 0);
 
                                                     const bookingPayload = {
                                                         userId: userData.id || userData._id || null,
@@ -1002,6 +1126,14 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                                         journeyDate: finalJourneyDate,
                                                         boardingPoint: selectedBoarding?.location || searchParams?.from || '',
                                                         droppingPoint: selectedDropping?.location || searchParams?.to || '',
+                                                        boarding: {
+                                                            point: selectedBoarding?.location || searchParams?.from || '',
+                                                            time: selectedBoarding?.time || ''
+                                                        },
+                                                        dropping: {
+                                                            point: selectedDropping?.location || searchParams?.to || '',
+                                                            time: selectedDropping?.time || ''
+                                                        },
                                                         selectedSeats: seatsMapped.map(s => s.label),
                                                         passengers: seatsMapped.map(s => ({
                                                             name: primaryPassenger.name,
@@ -1010,7 +1142,8 @@ const SeatSelectionOverlay = ({ isOpen, onClose, bus, searchParams, onProceed, i
                                                             seatNumber: s.label
                                                         })),
                                                         contactDetails,
-                                                        baseFare,
+                                                        baseFare: totalBaseFare,
+                                                        commission: totalCommission,
                                                         gst,
                                                         discount,
                                                         totalFare: totalPrice,

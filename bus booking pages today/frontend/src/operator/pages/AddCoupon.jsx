@@ -1,26 +1,89 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Tag, Settings, CreditCard, Clock, CheckCircle } from 'lucide-react';
-import { createCoupon } from '../../api/couponApi';
+import Select from 'react-select';
+import { createCoupon, updateAdminCoupon } from '../../api/couponApi';
+import { getAllRoutes } from '../../api/routeApi';
+import { getOperatorBuses } from '../../api/busApi';
 
 const AddCoupon = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    
+    const editData = location.state?.editData;
+    const isEditMode = Boolean(editData);
+
     const [loading, setLoading] = useState(false);
+    
+    // Dependencies Data
+    const [allRoutes, setAllRoutes] = useState([]);
+    const [allBuses, setAllBuses] = useState([]);
+
     const [formData, setFormData] = useState({
-        code: '',
-        description: '',
-        discountType: 'percentage',
-        discountValue: '',
-        maxDiscountAmount: '',
-        minBookingAmount: '',
-        applicableRoutes: 'all',
-        applicableBuses: 'all',
-        totalUsageLimit: '',
-        perUserLimit: '',
-        validFrom: '',
-        validTill: '',
-        status: 'Active'
+        code: editData?.code || '',
+        description: editData?.description || '',
+        discountType: editData?.discountType || 'percentage',
+        discountValue: editData?.discountValue || '',
+        maxDiscountAmount: editData?.maxDiscountAmount || '',
+        minBookingAmount: editData?.minBookingAmount || '',
+        applyToAllRoutes: editData === undefined ? true : editData.applyToAllRoutes,
+        applyToAllBuses: editData === undefined ? true : editData.applyToAllBuses,
+        totalUsageLimit: editData?.totalUsageLimit || '',
+        perUserLimit: editData?.perUserLimit || '',
+        validFrom: editData?.validFrom ? new Date(editData.validFrom).toISOString().split('T')[0] : '',
+        validTill: editData?.validTill ? new Date(editData.validTill).toISOString().split('T')[0] : (editData?.expiryDate ? new Date(editData.expiryDate).toISOString().split('T')[0] : ''),
+        status: editData?.status || 'Active'
     });
+
+    const [selectedRoutes, setSelectedRoutes] = useState([]);
+    const [selectedBuses, setSelectedBuses] = useState([]);
+
+    useEffect(() => {
+        const fetchDependencies = async () => {
+            try {
+                const routes = await getAllRoutes();
+                setAllRoutes(routes.map(r => ({ value: r._id, label: `${r.fromCity} → ${r.toCity}` })));
+                
+                if (isEditMode && !editData.applyToAllRoutes && editData.applicableRoutes) {
+                    setSelectedRoutes(
+                        routes.filter(r => editData.applicableRoutes.includes(r._id))
+                              .map(r => ({ value: r._id, label: `${r.fromCity} → ${r.toCity}` }))
+                    );
+                }
+            } catch (err) {
+                console.error('Failed to fetch routes', err);
+            }
+        };
+        fetchDependencies();
+    }, [isEditMode, editData]);
+
+    useEffect(() => {
+        const fetchBuses = async () => {
+            try {
+                let filters = {};
+                if (!formData.applyToAllRoutes && selectedRoutes.length > 0) {
+                    filters.routeIds = selectedRoutes.map(r => r.value).join(',');
+                } else if (!formData.applyToAllRoutes && selectedRoutes.length === 0) {
+                    setAllBuses([]);
+                    return; // No routes selected
+                }
+
+                const buses = await getOperatorBuses(filters);
+                const busOptions = buses.map(b => ({ value: b._id, label: `${b.busName} (${b.busNumber})` }));
+                setAllBuses(busOptions);
+                
+                if (isEditMode && !formData.applyToAllBuses && editData?.applicableBuses?.length > 0) {
+                     setSelectedBuses(
+                         busOptions.filter(b => editData.applicableBuses.includes(b.value))
+                     );
+                }
+
+            } catch (err) {
+                console.error('Failed to fetch buses', err);
+            }
+        };
+        fetchBuses();
+    }, [formData.applyToAllRoutes, selectedRoutes, isEditMode, editData]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -42,17 +105,38 @@ const AddCoupon = () => {
         try {
             const payload = {
                 ...formData,
-                discountAmount: Number(formData.discountValue),
-                expiryDate: formData.validTill
+                discountValue: Number(formData.discountValue),
+                validTill: formData.validTill,
+                applicableRoutes: formData.applyToAllRoutes ? [] : selectedRoutes.map(r => r.value),
+                applicableBuses: formData.applyToAllBuses ? [] : selectedBuses.map(b => b.value),
             };
-            await createCoupon(payload);
-            navigate('/operator/coupons', { state: { message: 'Coupon created successfully' } });
+            
+            if (isEditMode) {
+                await updateAdminCoupon(editData._id, payload);
+                navigate('/operator/coupons', { state: { message: 'Coupon updated successfully' } });
+            } else {
+                await createCoupon(payload);
+                navigate('/operator/coupons', { state: { message: 'Coupon created successfully' } });
+            }
         } catch (error) {
-            console.error('Failed to create coupon:', error);
-            // Handle error (e.g., show an alert)
+            console.error('Failed to create/update coupon:', error);
+            alert(error.message || 'Action failed');
         } finally {
             setLoading(false);
         }
+    };
+
+    // Styling for react-select
+    const selectStyles = {
+        control: (base) => ({
+            ...base,
+            padding: '4px',
+            borderRadius: '1rem',
+            borderColor: '#F3F4F6',
+            backgroundColor: '#F9FAFB',
+            boxShadow: 'none',
+            '&:hover': { borderColor: '#d84e55' }
+        })
     };
 
     return (
@@ -68,7 +152,7 @@ const AddCoupon = () => {
                         <ArrowLeft className="h-5 w-5 text-gray-400" />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-black text-deep-navy uppercase tracking-tight">Create New Coupon</h1>
+                        <h1 className="text-3xl font-black text-deep-navy uppercase tracking-tight">{isEditMode ? 'Edit Coupon' : 'Create New Coupon'}</h1>
                         <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">Configure promotional discount settings</p>
                     </div>
                 </div>
@@ -87,7 +171,7 @@ const AddCoupon = () => {
                         className="flex items-center gap-3 bg-[#d84e55] text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-black transition-all shadow-xl shadow-red-500/10 active:scale-95 disabled:opacity-50"
                     >
                         <Tag className="h-4 w-4" />
-                        {loading ? 'Creating...' : 'Create Coupon'}
+                        {loading ? 'Saving...' : (isEditMode ? 'Update Coupon' : 'Create Coupon')}
                     </button>
                 </div>
             </div>
@@ -180,8 +264,8 @@ const AddCoupon = () => {
                                 <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest">Section 2 — Booking Conditions</h3>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="space-y-2">
+                            <div className="grid grid-cols-1 gap-6">
+                                <div className="space-y-2 w-full md:w-1/2">
                                     <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-4">Min Booking Amount (₹)</label>
                                     <input
                                         type="number"
@@ -192,31 +276,67 @@ const AddCoupon = () => {
                                         className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-black focus:border-indigo-500 outline-none transition-all"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-4">Applicable Routes</label>
-                                    <select
-                                        name="applicableRoutes"
-                                        value={formData.applicableRoutes}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-black focus:border-indigo-500 outline-none transition-all appearance-none"
-                                    >
-                                        <option value="all">All Routes</option>
-                                        <option value="specific">Specific Routes (Coming Soon)</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-4">Applicable Bus Types</label>
-                                    <select
-                                        name="applicableBuses"
-                                        value={formData.applicableBuses}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-black focus:border-indigo-500 outline-none transition-all appearance-none"
-                                    >
-                                        <option value="all">All Buses</option>
-                                        <option value="AC Sleeper">AC Sleeper</option>
-                                        <option value="Non AC Sleeper">Non AC Sleeper</option>
-                                        <option value="Seater">Seater</option>
-                                    </select>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4 pt-4 border-t border-gray-100">
+                                    {/* Routes Mapping */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-4">Applicable Routes</label>
+                                            <div className="flex items-center gap-2">
+                                                <input 
+                                                    type="checkbox" 
+                                                    id="all-routes" 
+                                                    name="applyToAllRoutes" 
+                                                    checked={formData.applyToAllRoutes} 
+                                                    onChange={handleChange} 
+                                                    className="w-4 h-4 rounded border-gray-300 text-[#d84e55] focus:ring-[#d84e55]"
+                                                />
+                                                <label htmlFor="all-routes" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest cursor-pointer">All Routes</label>
+                                            </div>
+                                        </div>
+                                        {!formData.applyToAllRoutes && (
+                                            <Select
+                                                isMulti
+                                                options={allRoutes}
+                                                value={selectedRoutes}
+                                                onChange={setSelectedRoutes}
+                                                styles={selectStyles}
+                                                placeholder="Select specific routes..."
+                                            />
+                                        )}
+                                    </div>
+
+                                    {/* Buses Mapping */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-4">Applicable Buses</label>
+                                            <div className="flex items-center gap-2">
+                                                <input 
+                                                    type="checkbox" 
+                                                    id="all-buses" 
+                                                    name="applyToAllBuses" 
+                                                    checked={formData.applyToAllBuses} 
+                                                    onChange={handleChange} 
+                                                    className="w-4 h-4 rounded border-gray-300 text-[#d84e55] focus:ring-[#d84e55]"
+                                                />
+                                                <label htmlFor="all-buses" className="text-[10px] font-bold text-gray-500 uppercase tracking-widest cursor-pointer">All Buses</label>
+                                            </div>
+                                        </div>
+                                        {!formData.applyToAllBuses && (
+                                            <Select
+                                                isMulti
+                                                options={allBuses}
+                                                value={selectedBuses}
+                                                onChange={setSelectedBuses}
+                                                styles={selectStyles}
+                                                placeholder="Select specific buses..."
+                                                isDisabled={!formData.applyToAllRoutes && selectedRoutes.length === 0}
+                                            />
+                                        )}
+                                        {!formData.applyToAllBuses && !formData.applyToAllRoutes && selectedRoutes.length === 0 && (
+                                            <p className="text-[9px] font-bold text-red-400 px-4">Please select routes first</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

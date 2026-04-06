@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ShieldCheck, Zap, ThumbsUp, ChevronDown, ChevronUp, CreditCard, Landmark, Smartphone, Tag, ArrowLeft, Check, Clock, MapPin, User } from 'lucide-react';
 import { loadRazorpayScript, openRazorpayCheckout, createPaymentOrder } from '../api/paymentApi';
 import { saveBooking } from '../api/bookingApi';
-import { validateCoupon, getActiveCoupons } from '../api/couponApi';
+import { validateCoupon, getActiveCoupons, getPaymentCoupons } from '../api/couponApi';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -32,6 +32,14 @@ const BusPayment = ({ bus, seats, boarding, dropping, searchParams, passengers, 
     const [upiId, setUpiId] = useState('');
     const [selectedBank, setSelectedBank] = useState('');
     const [activeCoupons, setActiveCoupons] = useState([]);
+    const [deviceId] = useState(() => {
+        const savedId = localStorage.getItem('go_dev_id');
+        if (savedId) return savedId;
+        const newId = 'DEV-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        localStorage.setItem('go_dev_id', newId);
+        return newId;
+    });
+    const [slabInfo, setSlabInfo] = useState(null);
 
     useEffect(() => {
         if (!localStorage.getItem('token')) {
@@ -42,7 +50,8 @@ const BusPayment = ({ bus, seats, boarding, dropping, searchParams, passengers, 
 
         const loadCoupons = async () => {
             try {
-                const coupons = await getActiveCoupons();
+                const busId = bus?.id || bus?.busId || bus?._id || bus?.bus?._id || bus?.bus || null;
+                const coupons = await getPaymentCoupons(busId);
                 setActiveCoupons(coupons);
 
                 // Auto-apply logic
@@ -78,9 +87,10 @@ const BusPayment = ({ bus, seats, boarding, dropping, searchParams, passengers, 
         // eslint-disable-next-line
     }, []);
 
-    const baseFare = seats?.reduce((acc, s) => acc + (s?.price || 850), 0) || 0;
-    const gst = Math.round(baseFare * 0.05);
-    const total = baseFare + gst - discount;
+    const totalCommission = seats?.reduce((acc, s) => acc + (s?.commission || 0), 0) || 0;
+    const baseFare = seats?.reduce((acc, s) => acc + (s?.basePrice || s?.price || 850), 0) || 0;
+    const gst = Math.round((baseFare + totalCommission) * 0.05);
+    const total = baseFare + totalCommission + gst - discount;
 
     const paymentMethods = [
         { id: 'upi', label: 'UPI', icon: Smartphone },
@@ -170,6 +180,9 @@ const BusPayment = ({ bus, seats, boarding, dropping, searchParams, passengers, 
 
                         const savedData = await saveBooking({
                             bookingId,
+                            userId: userData?._id || userData?.id,
+                            deviceId: deviceId,
+                            ipAddress: '127.0.0.1', // Real IP should be captured on server
                             // Passenger
                             passengerName,
                             passengerEmail,
@@ -182,11 +195,19 @@ const BusPayment = ({ bus, seats, boarding, dropping, searchParams, passengers, 
 
                             // Bus / journey
                             busId: finalBusId,
-                            routeId: bus?.routeId || (typeof bus?.route === 'string' ? bus.route : bus?.route?._id),
-                            scheduleId: bus?.scheduleId || bus?.id,
-                            travelDate: formatDateToYYYYMMDD(searchParams?.date) || '',
+                            routeId: bus?.routeId || (typeof bus?.route === 'string' ? bus.route : bus?.route?._id) || bus?.route,
+                            scheduleId: bus?.scheduleId || bus?._id || bus?.id,
+                            travelDate: formatDateToYYYYMMDD(searchParams?.date || bus?.travelDate) || '',
                             boardingPoint: boarding?.location || bus?.departurePoint || '',
                             droppingPoint: dropping?.location || bus?.arrivalPoint || '',
+                            boarding: {
+                                point: boarding?.location || bus?.departurePoint || '',
+                                time: boarding?.time || ''
+                            },
+                            dropping: {
+                                point: dropping?.location || bus?.arrivalPoint || '',
+                                time: dropping?.time || ''
+                            },
                             seatNumbers: seats?.map(s => s?.label || s?.seatNo) || [],
                             seatDetails: seats?.map(s => ({
                                 seatNumber: s?.label || s?.seatNo,
@@ -196,6 +217,7 @@ const BusPayment = ({ bus, seats, boarding, dropping, searchParams, passengers, 
 
                             // Fare
                             baseFare,
+                            commission: totalCommission,
                             gst,
                             discount,
                             totalFare: total,
@@ -232,12 +254,22 @@ const BusPayment = ({ bus, seats, boarding, dropping, searchParams, passengers, 
 
     // ─── Coupon validation using API ────────────────────────────────────────
     const handleApplyCoupon = async () => {
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         try {
-            const result = await validateCoupon(couponCode, baseFare);
-            if (result?.valid) {
+            const result = await validateCoupon(couponCode, baseFare, userData?._id || userData?.id, {
+                deviceId: deviceId,
+                category: 'Bus',
+                operatorId: bus?.operator?._id || bus?.operator || bus?.operatorId,
+                busId: bus?.busId || (typeof bus?.bus === 'string' ? bus.bus : bus?.bus?._id) || bus?._id || bus?.id,
+                routeId: bus?.routeId || (typeof bus?.route === 'string' ? bus.route : bus?.route?._id) || bus?.route,
+                sourceCity: bus?.departurePoint || '',
+                destinationCity: bus?.arrivalPoint || ''
+            });
+            if (result?.valid || result?.success) {
                 setCouponApplied(true);
                 setDiscount(result.discount || 0);
-                toast.success('Coupon applied successfully!', { position: "top-right", theme: "colored" });
+                setSlabInfo(result.appliedSlab || null);
+                toast.success(result.message || 'Coupon applied successfully!', { position: "top-right", theme: "colored" });
             } else {
                 toast.error(result?.message || 'Invalid coupon code.', { position: "top-right", theme: "colored" });
             }
@@ -250,6 +282,7 @@ const BusPayment = ({ bus, seats, boarding, dropping, searchParams, passengers, 
         setCouponCode('');
         setCouponApplied(false);
         setDiscount(0);
+        setSlabInfo(null);
         toast.info('Coupon removed', { position: "top-right", theme: "colored" });
     };
 
@@ -330,46 +363,70 @@ const BusPayment = ({ bus, seats, boarding, dropping, searchParams, passengers, 
                                         <div className="mt-6">
                                             <p className="text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-3">Available Offers</p>
                                             <div className="space-y-3">
-                                                {activeCoupons.map((coupon) => (
-                                                    <div key={coupon._id || coupon.code} className="border border-dashed border-gray-200 rounded-xl p-4 bg-gray-50/50 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between group hover:border-gray-300 transition-colors">
-                                                        <div className="flex items-start gap-3">
-                                                            <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-sm mt-0.5">
-                                                                <Tag className="h-4 w-4 text-[#D84E55]" />
-                                                            </div>
-                                                            <div>
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <span className="font-black text-gray-800 tracking-wide text-[14px]">{coupon.code}</span>
-                                                                    {coupon.discountType === 'flat' ? (
-                                                                        <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Flat ₹{coupon.discountValue || coupon.discountAmount} OFF</span>
-                                                                    ) : (
-                                                                        <span className="bg-purple-100 text-purple-700 text-[9px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Get {coupon.discountValue || coupon.discountAmount}% OFF</span>
-                                                                    )}
+                                                {activeCoupons.map((coupon, index) => {
+                                                    const gradients = [
+                                                        'from-[#FFF1F1] to-[#FFE4E4] border-[#FED7D7]',
+                                                        'from-[#EBF5FF] to-[#D6E9FF] border-[#B9E0FF]',
+                                                        'from-[#E6FFFA] to-[#D1FFF5] border-[#A7F3D0]',
+                                                        'from-[#FFFBEB] to-[#FEF3C7] border-[#FDE68A]',
+                                                        'from-[#EEF2FF] to-[#E0E7FF] border-[#C7D2FE]'
+                                                    ];
+                                                    const gradientClass = gradients[index % gradients.length];
+                                                    return (
+                                                        <div key={coupon._id || coupon.code} className={`border bg-gradient-to-br ${gradientClass} rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between group hover:shadow-md transition-all cursor-pointer shadow-sm hover:-translate-y-0.5`}>
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="bg-white/80 backdrop-blur-sm p-2.5 rounded-xl border border-white shadow-sm mt-0.5">
+                                                                    <Tag className="h-5 w-5 text-[#D84E55]" />
                                                                 </div>
-                                                                <p className="text-[11px] font-medium text-gray-500">{coupon.description || `Save on bookings above ₹${coupon.minBookingAmount || 0}`}</p>
+                                                                <div>
+                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                        <span className="font-black text-gray-800 tracking-wide text-[14px]">{coupon.code}</span>
+                                                                        {coupon.discountType === 'flat' ? (
+                                                                            <span className="bg-[#D84E55] text-white text-[9px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Flat ₹{coupon.discountValue || coupon.discountAmount} OFF</span>
+                                                                        ) : (
+                                                                            <span className="bg-purple-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Get {coupon.discountValue || coupon.discountAmount}% OFF</span>
+                                                                        )}
+                                                                        {coupon.role === 'superadmin' || coupon.role === 'admin' ? (
+                                                                            <span className="bg-blue-100 text-blue-700 text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-widest ml-1">GoAir Special</span>
+                                                                        ) : (
+                                                                            <span className="bg-emerald-100 text-emerald-700 text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-widest ml-1">Operator Deal</span>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-tight">{coupon.description || `Save on bookings above ₹${coupon.minBookingAmount || 0}`}</p>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <button
-                                                            onClick={async () => {
-                                                                setCouponCode(coupon.code);
-                                                                try {
-                                                                    const result = await validateCoupon(coupon.code, baseFare);
-                                                                    if (result?.valid) {
-                                                                        setCouponApplied(true);
-                                                                        setDiscount(result.discount || 0);
-                                                                        toast.success('Coupon applied successfully!', { position: "top-right", theme: "colored" });
-                                                                    } else {
-                                                                        toast.error(result?.message || 'Invalid coupon code.', { position: "top-right", theme: "colored" });
+                                                            <button
+                                                                onClick={async () => {
+                                                                    setCouponCode(coupon.code);
+                                                                    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+                                                                    try {
+                                                                        const result = await validateCoupon(coupon.code, baseFare, userData?._id || userData?.id, {
+                                                                            deviceId: deviceId,
+                                                                            category: 'Bus',
+                                                                            operatorId: bus?.operator?._id || bus?.operator || bus?.operatorId,
+                                                                            busId: bus?.busId || (typeof bus?.bus === 'string' ? bus.bus : bus?.bus?._id) || bus?._id || bus?.id,
+                                                                            routeId: bus?.routeId || (typeof bus?.route === 'string' ? bus.route : bus?.route?._id) || bus?.route,
+                                                                            sourceCity: bus?.departurePoint || '',
+                                                                            destinationCity: bus?.arrivalPoint || ''
+                                                                        });
+                                                                        if (result?.valid || result?.success) {
+                                                                            setCouponApplied(true);
+                                                                            setDiscount(result.discount || 0);
+                                                                            toast.success(result.message || 'Coupon applied successfully!', { position: "top-right", theme: "colored" });
+                                                                        } else {
+                                                                            toast.error(result?.message || 'Invalid coupon code.', { position: "top-right", theme: "colored" });
+                                                                        }
+                                                                    } catch (err) {
+                                                                        toast.error(err?.message || 'Failed to apply coupon. Try again.', { position: "top-right", theme: "colored" });
                                                                     }
-                                                                } catch (err) {
-                                                                    toast.error(err?.message || 'Failed to apply coupon. Try again.', { position: "top-right", theme: "colored" });
-                                                                }
-                                                            }}
-                                                            className="text-[12px] font-bold text-[#D84E55] hover:text-[#C13E44] bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg transition-colors w-full sm:w-auto text-center"
-                                                        >
-                                                            APPLY
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                                                }}
+                                                                className="text-[12px] font-black text-white bg-gray-900 hover:bg-gray-800 px-6 py-2.5 rounded-xl transition-all w-full sm:w-auto text-center shadow-lg shadow-black/5"
+                                                            >
+                                                                TAP TO APPLY
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
@@ -529,13 +586,26 @@ const BusPayment = ({ bus, seats, boarding, dropping, searchParams, passengers, 
                                         <span className="font-semibold text-gray-500">Base Fare ({seats?.length || 1} seat{(seats?.length || 1) > 1 ? 's' : ''})</span>
                                         <span className="font-bold text-gray-800">₹{baseFare}</span>
                                     </div>
+                                    {totalCommission > 0 && (
+                                        <div className="flex justify-between text-[13px]">
+                                            <span className="font-semibold text-gray-500">Platform Fee</span>
+                                            <span className="font-bold text-gray-800">₹{totalCommission}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between text-[13px]">
                                         <span className="font-semibold text-gray-500">GST (5%)</span>
                                         <span className="font-bold text-gray-800">₹{gst}</span>
                                     </div>
                                     {couponApplied && (
-                                        <div className="flex justify-between text-[13px]">
-                                            <span className="font-semibold text-emerald-600">Coupon Discount ({couponCode})</span>
+                                        <div className="flex justify-between items-start text-[13px] animate-in slide-in-from-right-2">
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-emerald-600">Coupon Discount ({couponCode})</span>
+                                                {slabInfo && (
+                                                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1 -mt-0.5">
+                                                        <Zap className="h-3 w-3 fill-emerald-500" /> Slab benefit applied
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className="font-bold text-emerald-600">-₹{discount}</span>
                                         </div>
                                     )}
@@ -561,14 +631,14 @@ const BusPayment = ({ bus, seats, boarding, dropping, searchParams, passengers, 
                                         <div className="relative flex items-start gap-3">
                                             <div className="absolute -left-[13px] top-1 w-2 h-2 bg-gray-500 rounded-full z-10"></div>
                                             <div>
-                                                <p className="text-[13px] font-bold text-gray-800">{bus?.departure || '--:--'}</p>
+                                                <p className="text-[13px] font-bold text-gray-800">{boarding?.time || bus?.departure || '--:--'}</p>
                                                 <p className="text-[11px] font-semibold text-gray-400">{boarding?.location || bus?.departurePoint || 'Boarding Point'}</p>
                                             </div>
                                         </div>
                                         <div className="relative flex items-start gap-3">
                                             <div className="absolute -left-[13px] top-1 w-2 h-2 bg-gray-500 rounded-full z-10"></div>
                                             <div>
-                                                <p className="text-[13px] font-bold text-gray-800">{bus?.arrival || '--:--'}</p>
+                                                <p className="text-[13px] font-bold text-gray-800">{dropping?.time || bus?.arrival || '--:--'}</p>
                                                 <p className="text-[11px] font-semibold text-gray-400">{dropping?.location || bus?.arrivalPoint || 'Dropping Point'}</p>
                                             </div>
                                         </div>

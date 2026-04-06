@@ -39,9 +39,9 @@ export const getAllBuses = async () => {
 };
 
 // --- Operator Bus Management ---
-export const getOperatorBuses = async () => {
+export const getOperatorBuses = async (filters = {}) => {
     try {
-        const response = await Axios.get('/buses/my-buses');
+        const response = await Axios.get('/buses/my-buses', { params: filters });
         return response.data;
     } catch (error) {
         throw error.response ? error.response.data : new Error('Network Error');
@@ -60,6 +60,26 @@ export const createBus = async (busData) => {
 export const deleteBus = async (busId) => {
     try {
         const response = await Axios.delete(`/buses/${busId}`);
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};
+
+// Get single bus by ID (operator context — uses /buses/:id)
+export const getOperatorBus = async (busId) => {
+    try {
+        const response = await Axios.get(`/buses/${busId}`);
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};
+
+// Update a bus (operator context)
+export const updateBus = async (busId, data) => {
+    try {
+        const response = await Axios.put(`/buses/${busId}`, data);
         return response.data;
     } catch (error) {
         throw error.response ? error.response.data : new Error('Network Error');
