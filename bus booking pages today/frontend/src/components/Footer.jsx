@@ -1,145 +1,182 @@
 import React from 'react';
-import { Facebook, Instagram, Twitter, Youtube, Mail, Send, ShieldCheck, Zap, Headphones, Globe } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Linkedin, Mail, Globe, MapPin, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
-    const footerLinks = [
-        {
-            title: "Book with Us",
-            links: [
-                { label: "Bus Tickets", path: "/" },
-                { label: "Flight Booking", path: "/flights" },
-                { label: "Train Booking", path: "/trains" },
-                { label: "Hotel Booking", path: "/hotels" },
-                { label: "Track Ticket", path: "/track-ticket" }
-            ]
-        },
-        {
-            title: "Help & Support",
-            links: [
-                { label: "Help Center", path: "/support" },
-                { label: "Cancel Ticket", path: "/cancel" },
-                { label: "Change Bus Date", path: "/change-date" },
-                { label: "Offers", path: "/offers" },
-                { label: "Contact Us", path: "/contact" }
-            ]
-        },
-        {
-            title: "Legal",
-            links: [
-                { label: "Terms & Conditions", path: "/legal/terms" },
-                { label: "Privacy Policy", path: "/legal/privacy" },
-                { label: "Cookie Policy", path: "/legal/cookies" },
-                { label: "Disclaimer", path: "/legal/disclaimer" }
-            ]
-        }
-    ];
-
     return (
-        <footer className="bg-deep-navy pt-24 pb-12 relative overflow-hidden">
-            {/* Background Decorative Elements */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#d84e55]/30 to-transparent" />
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#d84e55]/5 blur-[120px] rounded-full -mr-64 -mt-64" />
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/5 blur-[100px] rounded-full -ml-32 -mb-32" />
+        <footer className="bg-[#0f172a] text-slate-300 pt-16 pb-8 relative overflow-hidden font-sans border-t border-slate-800">
+            {/* Background elements */}
+            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none -mr-64 -mt-64" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#f26a36]/5 blur-[120px] rounded-full pointer-events-none -ml-32 -mb-32" />
 
-            <div className="max-w-7xl mx-auto px-8 relative z-10">
-                {/* Newsletter & Highlight Strip */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mb-20 items-center">
-                    <div className="lg:col-span-2">
-                        <h3 className="text-3xl font-black text-white tracking-tight mb-4">
-                            Stay ahead of the curve with <span className="text-[#d84e55]">Ixigo</span>
-                        </h3>
-                        <p className="text-gray-400 font-bold mb-8 max-w-xl">
-                            Subscribe to our newsletter for exclusive travel deals, booking tips, and premium offers delivered straight to your inbox.
-                        </p>
-                        <div className="relative max-w-lg group">
+            <div className="max-w-7xl mx-auto px-6 relative z-10">
+                {/* SECTION 1 — Newsletter / CTA */}
+                <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] p-8 md:p-12 rounded-[32px] border border-white/5 shadow-2xl mb-16 relative overflow-hidden group">
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10 flex-wrap lg:flex-nowrap">
+                        <div className="w-full lg:w-1/2">
+                            <h3 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-3">
+                                Get Exclusive <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-[#f26a36]">Travel Deals</span>
+                            </h3>
+                            <p className="text-slate-400 font-medium text-base">
+                                Subscribe and receive special discounts on bus and flight tickets.
+                            </p>
+                        </div>
+                        <div className="w-full lg:w-1/2 flex items-center max-w-lg relative group/input">
+                            <div className="absolute left-6 text-slate-400">
+                                <Mail className="h-5 w-5" />
+                            </div>
                             <input
                                 type="email"
                                 placeholder="Enter your email address"
-                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-8 py-5 text-white font-bold placeholder:text-gray-500 focus:outline-none focus:border-[#d84e55] focus:ring-4 focus:ring-[#d84e55]/10 transition-all"
+                                className="w-full bg-[#334155]/50 border-2 border-white/5 focus:border-[#f26a36]/50 rounded-2xl py-4 md:py-5 pl-14 pr-32 md:pr-40 text-white font-bold placeholder:text-slate-400 outline-none transition-all shadow-inner backdrop-blur-sm"
                             />
-                            <button className="absolute right-2 top-2 bottom-2 bg-[#d84e55] text-white px-8 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#c13e44] hover:scale-105 transition-all flex items-center gap-2 shadow-lg shadow-red-500/20">
+                            <button className="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-[#f26a36] to-[#e05824] hover:to-[#f26a36] text-white px-6 md:px-8 rounded-xl font-bold text-sm tracking-wide shadow-[0_0_20px_rgba(242,106,54,0.4)] hover:shadow-[0_0_30px_rgba(242,106,54,0.6)] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2">
                                 <span>Subscribe</span>
-                                <Send className="h-4 w-4" />
                             </button>
-                        </div>
-                    </div>
-                    <div className="bg-white/5 backdrop-blur-md rounded-[32px] p-8 border border-white/10 space-y-6">
-                        <div className="flex items-center gap-4">
-                            <div className="bg-[#d84e55]/20 p-3 rounded-xl">
-                                <Headphones className="h-5 w-5 text-[#d84e55]" />
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-black text-white uppercase tracking-widest">24x7 Support</h4>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">Dedicated travel assistance</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="bg-blue-500/20 p-3 rounded-xl">
-                                <Zap className="h-5 w-5 text-blue-400" />
-                            </div>
-                            <div>
-                                <h4 className="text-sm font-black text-white uppercase tracking-widest">Instant Refunds</h4>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">Fastest processing in India</p>
-                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-12 mb-20">
-                    {/* Brand Meta Column */}
-                    <div className="col-span-2 lg:col-span-2 space-y-8">
-                        <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-gradient-to-br from-[#d84e55] to-[#f43f5e] rounded-xl flex items-center justify-center shadow-lg transform -rotate-6 group-hover:rotate-0 transition-transform">
+                {/* SECTION 2 — Main Footer Content (Grid Layout) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-x-8 gap-y-12 mb-16">
+                    {/* Column 1 – Brand */}
+                    <div className="lg:col-span-1 space-y-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-[#f26a36] to-[#e05824] rounded-xl flex items-center justify-center shadow-lg transform -rotate-6 transition-transform hover:rotate-0">
                                 <Globe className="h-6 w-6 text-white" />
                             </div>
                             <span className="text-2xl font-black text-white tracking-tighter italic">
-                                GOAIR<span className="text-[#d84e55]">CLASS</span>
+                                GOAIR<span className="text-[#f26a36]">CLASS</span>
                             </span>
                         </div>
-                        <p className="text-gray-400 text-sm font-medium leading-relaxed max-w-sm">
-                            Ixigo is India's leading travel app & website, helping 50 million+ travelers plan their trips across trains, flights, buses & hotels.
+                        <p className="text-[14px] text-slate-400 font-medium leading-relaxed">
+                            GoAirClass is India's smart travel booking platform for bus, flight and train tickets.
                         </p>
-                        <div className="flex gap-4">
-                            {[Facebook, Instagram, Twitter, Youtube].map((Icon, i) => (
-                                <a key={i} href="#" className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-gray-400 hover:bg-[#d84e55] hover:text-white transition-all border border-white/5 group hover:scale-110">
-                                    <Icon className="h-5 w-5" />
+                        <div className="flex gap-4 pt-2">
+                            {[
+                                { icon: Facebook, href: "#" },
+                                { icon: Instagram, href: "#" },
+                                { icon: Twitter, href: "#" },
+                                { icon: Linkedin, href: "#" }
+                            ].map((social, i) => (
+                                <a key={i} href={social.href} className="w-10 h-10 bg-white/5 hover:bg-[#f26a36] rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-all duration-300 shadow-sm border border-white/5 hover:scale-110">
+                                    <social.icon className="h-4 w-4" />
                                 </a>
                             ))}
                         </div>
                     </div>
 
-                    {/* Link Columns */}
-                    {footerLinks.map((section) => (
-                        <div key={section.title} className="space-y-6">
-                            <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">{section.title}</h4>
-                            <ul className="space-y-4">
-                                {section.links.map((link) => (
-                                    <li key={link.label}>
-                                        <Link to={link.path} className="text-gray-500 text-sm font-bold hover:text-[#d84e55] transition-colors flex items-center gap-2 group">
-                                            <div className="w-0 h-px bg-[#d84e55] group-hover:w-3 transition-all" />
-                                            {link.label}
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
+                    {/* Column 2 – Company */}
+                    <div>
+                        <h4 className="text-[15px] font-bold text-white mb-6 uppercase tracking-widest flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-[#f26a36]" />
+                            Company
+                        </h4>
+                        <ul className="space-y-4">
+                            {[
+                                { name: 'About Us', path: '/about' },
+                                { name: 'Careers', path: '/careers' },
+                                { name: 'Blog', path: '/blog' },
+                                { name: 'Press', path: '/press' },
+                                { name: 'Contact', path: '/contact' }
+                            ].map(l => (
+                                <li key={l.name}><Link to={l.path} className="text-[14px] text-slate-400 font-medium hover:text-[#f26a36] hover:translate-x-1 transition-all inline-flex items-center gap-2 group"><ChevronRight className="h-3 w-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all text-[#f26a36]" /> {l.name}</Link></li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Column 3 – Travel Services */}
+                    <div>
+                        <h4 className="text-[15px] font-bold text-white mb-6 uppercase tracking-widest flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-[#f26a36]" />
+                            Services
+                        </h4>
+                        <ul className="space-y-4">
+                            {[
+                                { name: 'Bus Booking', path: '/' },
+                                { name: 'Flight Booking', path: '/flights' },
+                                { name: 'Train Booking', path: '/trains' },
+                                { name: 'Hotel Booking', path: '/hotels' }
+                            ].map(l => (
+                                <li key={l.name}><Link to={l.path} className="text-[14px] text-slate-400 font-medium hover:text-[#f26a36] hover:translate-x-1 transition-all inline-flex items-center gap-2 group"><ChevronRight className="h-3 w-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all text-[#f26a36]" /> {l.name}</Link></li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Column 4 – Support */}
+                    <div>
+                        <h4 className="text-[15px] font-bold text-white mb-6 uppercase tracking-widest flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-[#f26a36]" />
+                            Support
+                        </h4>
+                        <ul className="space-y-4">
+                            {[
+                                { name: 'Help Center', path: '/support' },
+                                { name: 'Track Ticket', path: '/track-ticket' },
+                                { name: 'Refund Policy', path: '/refund-policy' },
+                                { name: 'Cancellation Policy', path: '/cancellation-policy' },
+                                { name: 'Customer Support', path: '/support' }
+                            ].map(l => (
+                                <li key={l.name}><Link to={l.path} className="text-[14px] text-slate-400 font-medium hover:text-[#f26a36] hover:translate-x-1 transition-all inline-flex items-center gap-2 group"><ChevronRight className="h-3 w-3 opacity-0 -ml-5 group-hover:opacity-100 group-hover:ml-0 transition-all text-[#f26a36]" /> {l.name}</Link></li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Column 5 – Download App */}
+                    <div className="lg:col-span-1">
+                        <h4 className="text-[15px] font-bold text-white mb-6 uppercase tracking-widest flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-[#f26a36]" />
+                            Download App
+                        </h4>
+                        <div className="flex flex-col gap-3">
+                            <button className="bg-white/5 hover:bg-[#f26a36] backdrop-blur-sm border border-white/10 hover:border-[#f26a36]/50 rounded-xl p-3 flex flex-row items-center justify-start gap-4 transition-all group shadow-sm w-[160px]">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Google_Play_Arrow_logo.svg/512px-Google_Play_Arrow_logo.svg.png" alt="Google Play" className="h-6 w-6 object-contain" />
+                                <div className="text-left">
+                                    <p className="text-[10px] text-slate-300 group-hover:text-white font-bold uppercase tracking-wider mb-0.5 leading-none transition-colors">Get it on</p>
+                                    <p className="text-[14px] text-white font-black leading-none">Google Play</p>
+                                </div>
+                            </button>
+                            <button className="bg-white/5 hover:bg-[#f26a36] backdrop-blur-sm border border-white/10 hover:border-[#f26a36]/50 rounded-xl p-3 flex flex-row items-center justify-start gap-4 transition-all group shadow-sm w-[160px]">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/App_Store_%28iOS%29.svg/512px-App_Store_%28iOS%29.svg.png" alt="App Store" className="h-6 w-6 object-contain filter invert transition-all" />
+                                <div className="text-left">
+                                    <p className="text-[10px] text-slate-300 group-hover:text-white font-bold uppercase tracking-wider mb-0.5 leading-none transition-colors">Download on the</p>
+                                    <p className="text-[14px] text-white font-black leading-none">App Store</p>
+                                </div>
+                            </button>
+                            <p className="text-[12px] text-slate-500 font-medium mt-3 leading-relaxed">Book tickets faster with our mobile app</p>
                         </div>
-                    ))}
+                    </div>
                 </div>
 
-                {/* Bottom Bar */}
-                <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div className="flex gap-8 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                        <span>© 2026 Goairclass Ltd.</span>
-                        <span className="flex items-center gap-2">
-                            <ShieldCheck className="h-3 w-3 text-green-500" />
-                            PCI DSS Certified
-                        </span>
+                {/* SECTION 3 — Popular Routes Section */}
+                <div className="border-t border-white/5 pt-10 pb-10">
+                    <h4 className="text-[13px] font-bold text-slate-400 mb-6 uppercase tracking-widest flex items-center gap-2">
+                        <MapPin className="h-4 w-4" /> Popular Routes
+                    </h4>
+                    <div className="flex flex-wrap gap-3">
+                        {[
+                            'Pune → Mumbai',
+                            'Delhi → Jaipur',
+                            'Bangalore → Chennai',
+                            'Hyderabad → Goa',
+                            'Mumbai → Ahmedabad',
+                        ].map(route => (
+                            <Link key={route} to="#" className="px-4 py-2 bg-white/5 hover:bg-[#f26a36]/10 border border-white/5 hover:border-[#f26a36]/50 shadow-sm text-[13px] font-medium text-slate-300 hover:text-white rounded-full transition-all duration-300 hover:-translate-y-0.5 whitespace-nowrap">
+                                {route}
+                            </Link>
+                        ))}
                     </div>
-                    <div className="flex items-center gap-6">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Visa_2021.svg/512px-Visa_2021.svg.png" className="h-4 opacity-50 grayscale hover:grayscale-0 transition-all cursor-pointer" alt="Visa" />
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/512px-Mastercard-logo.svg.png" className="h-4 opacity-50 grayscale hover:grayscale-0 transition-all cursor-pointer" alt="Mastercard" />
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/UPI-Logo-vector.svg/512px-UPI-Logo-vector.svg.png" className="h-4 opacity-50 grayscale hover:grayscale-0 transition-all cursor-pointer" alt="UPI" />
+                </div>
+
+                {/* SECTION 4 — Bottom Footer Bar */}
+                <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="text-[13px] font-medium text-slate-400">
+                        © 2025 GoAirClass. All Rights Reserved
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-6 text-[13px] font-medium">
+                        <Link to="#" className="text-slate-400 hover:text-white transition-colors">Privacy Policy</Link>
+                        <Link to="#" className="text-slate-400 hover:text-white transition-colors">Terms of Service</Link>
+                        <Link to="#" className="text-slate-400 hover:text-white transition-colors">Cookies Policy</Link>
                     </div>
                 </div>
             </div>

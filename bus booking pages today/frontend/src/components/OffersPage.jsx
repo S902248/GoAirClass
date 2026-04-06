@@ -69,54 +69,54 @@ const OffersPage = () => {
     const allOffers = [...dynamicOffers, ...staticOffers];
 
     return (
-        <div className="relative min-h-screen w-full flex flex-col items-center justify-start pt-32 pb-24 bg-white overflow-hidden">
+        <div className="relative min-h-screen w-full flex flex-col items-center justify-start pt-32 pb-24 bg-[#f8fafc] overflow-hidden">
 
             {/* Fresh multi-layered background */}
             <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-sky-400/5 rounded-full blur-[140px] animate-pulse duration-[10s]" />
-                <div className="absolute bottom-[5%] right-[-10%] w-[35%] h-[35%] bg-emerald-400/5 rounded-full blur-[120px] animate-pulse duration-[8s]" />
-                <div className="absolute top-[30%] right-[15%] w-[20%] h-[20%] bg-indigo-400/5 rounded-full blur-[80px] animate-bounce duration-[15s]" />
+                <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-radiant-coral/10 rounded-full blur-[140px] animate-pulse duration-[10s]" />
+                <div className="absolute bottom-[5%] right-[-10%] w-[35%] h-[35%] bg-blue-400/10 rounded-full blur-[120px] animate-pulse duration-[8s]" />
+                <div className="absolute top-[30%] right-[15%] w-[20%] h-[20%] bg-purple-400/5 rounded-full blur-[80px] animate-bounce duration-[15s]" />
 
-                {/* Floating airy shapes */}
-                <div className="absolute top-40 left-[10%] w-32 h-32 border-2 border-sky-400/10 rounded-full animate-spin duration-[20s]" />
-                <div className="absolute bottom-60 right-[15%] w-48 h-48 border-2 border-emerald-400/10 rounded-full animate-spin-slow" />
+                {/* Floating particles/shapes */}
+                <div className="absolute top-40 left-[10%] w-32 h-32 border-2 border-radiant-coral/5 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] animate-spin duration-[20s]" />
+                <div className="absolute bottom-60 right-[15%] w-48 h-48 border-2 border-blue-400/5 rounded-[50%_50%_20%_80%/25%_80%_20%_75%] animate-spin-slow" />
             </div>
 
             <div className="relative z-10 w-full max-w-7xl px-6">
 
-                {/* Clean Header Section */}
+                {/* Enhanced Header Section */}
                 <div className="text-center mb-20 space-y-6 animate-in fade-in slide-in-from-top-6 duration-1000">
-                    <div className="inline-flex items-center gap-3 bg-sky-50 py-2 px-5 rounded-full text-[10px] font-black uppercase tracking-[0.25em] text-sky-600 shadow-sm border border-sky-100">
+                    <div className="inline-flex items-center gap-3 bg-white/70 backdrop-blur-md py-2 px-5 rounded-full text-[10px] font-black uppercase tracking-[0.25em] text-radiant-coral shadow-sm border border-white/50">
                         <Gift className="h-4 w-4" />
-                        <span>Fresh Savings</span>
+                        <span>Curated Savings</span>
                     </div>
                     <div className="relative inline-block">
-                        <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none uppercase relative z-10">
-                            Discover <span className="text-sky-500">Offers</span>
+                        <h1 className="text-5xl md:text-7xl font-black text-deep-navy tracking-tighter leading-none uppercase italic relative z-10">
+                            Exclusive <span className="text-radiant-coral italic">Offers</span>
                         </h1>
-                        <div className="absolute -bottom-2 -right-4 w-24 h-24 bg-sky-100 rounded-full blur-2xl z-0" />
+                        <div className="absolute -bottom-2 -right-4 w-24 h-24 bg-radiant-coral/10 rounded-full blur-2xl z-0" />
                     </div>
-                    <p className="text-slate-500 font-bold text-sm max-w-sm mx-auto leading-relaxed uppercase tracking-tighter">
-                        Experience more for less. Explore our curated selection of travel deals and partner discounts.
+                    <p className="text-gray-400 font-bold text-sm max-w-sm mx-auto leading-relaxed uppercase tracking-tighter">
+                        Unlock premium travel experiences with our handpicked discount codes and bank partner deals.
                     </p>
                 </div>
 
-                {/* Fresh Features Bar */}
+                {/* Glassmorphism Features Bar */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20 max-w-5xl mx-auto">
                     {[
-                        { icon: Zap, label: "Fastest Savings", color: "text-amber-500", bg: "bg-amber-50", desc: "Redeem instantly" },
-                        { icon: ShieldCheck, label: "Verified Deals", color: "text-emerald-500", bg: "bg-emerald-50", desc: "100% Guaranteed" },
-                        { icon: Ticket, label: "Premier Access", color: "text-sky-500", bg: "bg-sky-50", desc: "Member exclusives" }
+                        { icon: Zap, label: "Instant Savings", color: "text-amber-500", bg: "bg-amber-500/10", desc: "Applied directly" },
+                        { icon: ShieldCheck, label: "Verified Deals", color: "text-emerald-500", bg: "bg-emerald-500/10", desc: "100% working" },
+                        { icon: Ticket, label: "Loyalty Perks", color: "text-blue-500", bg: "bg-blue-500/10", desc: "For members" }
                     ].map((feature, i) => (
                         <div key={i} className="group relative">
-                            <div className="absolute inset-0 bg-sky-50/50 blur-xl rounded-[32px] group-hover:bg-sky-100/50 transition-all duration-500" />
-                            <div className="relative flex flex-col items-center text-center gap-4 p-8 rounded-[32px] border border-white bg-white shadow-[0_8px_30px_rgb(0_0_0_/_0.04)] hover:-translate-y-2 transition-all duration-500 animate-in fade-in zoom-in-95 delay-[200ms]">
-                                <div className={`w-14 h-14 rounded-2xl ${feature.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-inner`}>
+                            <div className="absolute inset-0 bg-white/40 blur-xl rounded-[32px] group-hover:bg-white/60 transition-all duration-500" />
+                            <div className="relative flex flex-col items-center text-center gap-4 p-8 rounded-[32px] border border-white/80 bg-white/30 backdrop-blur-xl shadow-xl shadow-gray-200/20 hover:-translate-y-2 transition-all duration-500 animate-in fade-in zoom-in-95 delay-[200ms]">
+                                <div className={`w-14 h-14 rounded-2xl ${feature.bg} flex items-center justify-center group-hover:scale-110 transition-transform duration-500`}>
                                     <feature.icon className={`h-7 w-7 ${feature.color}`} />
                                 </div>
                                 <div>
-                                    <p className="text-[11px] font-black text-slate-900 uppercase tracking-[0.15em] mb-1">{feature.label}</p>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{feature.desc}</p>
+                                    <p className="text-[11px] font-black text-deep-navy uppercase tracking-[0.15em] mb-1">{feature.label}</p>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{feature.desc}</p>
                                 </div>
                             </div>
                         </div>

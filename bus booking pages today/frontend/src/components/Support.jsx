@@ -1,96 +1,117 @@
 import React, { useState } from 'react';
-import { Headphones, Mail, MessageSquare, Phone, ChevronDown, ChevronUp, Search, ExternalLink, ShieldCheck, Clock, UserCheck, ArrowRight } from 'lucide-react';
+import { Headphones, Mail, MessageSquare, Phone, Search, ExternalLink, ShieldCheck, UserCheck, Bot, Ticket, RefreshCw, Calendar, Armchair } from 'lucide-react';
 
 const Support = () => {
-    const [activeFaq, setActiveFaq] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
-
-    const faqs = [
-        {
-            question: "How do I book a bus ticket?",
-            answer: "Simply enter your departure and destination cities, select your travel date, and click 'Search'. Browse available buses, select your preferred seat, and proceed to payment."
-        },
-        {
-            question: "Can I cancel my ticket?",
-            answer: "Yes, you can cancel your ticket through the 'Manage Booking' section. Cancellation charges depend on the operator's policy and the time remaining before departure."
-        },
-        {
-            question: "How do I get a refund for a cancelled ticket?",
-            answer: "Refunds are processed automatically to your original payment method within 5-7 business days of cancellation."
-        },
-        {
-            question: "What is the policy for rescheduling?",
-            answer: "Rescheduling depends on the bus operator. You can check the rescheduling options in the 'Manage Booking' section or contact our support team."
-        },
-        {
-            question: "Is there a women-only seat option?",
-            answer: "Yes, we offer special seats for women travelers. Look for the pink 'Women Only' toggle or icon during seat selection."
-        }
-    ];
 
     const contactMethods = [
         {
             icon: Phone,
             title: "24/7 Helpline",
             value: "+91 1800-412-9000",
-            desc: "For urgent booking assistance",
+            desc: "Call our travel support team anytime",
             color: "text-blue-500",
             bg: "bg-blue-500/10",
-            glow: "shadow-blue-200/50"
         },
         {
             icon: Mail,
             title: "Email Support",
             value: "support@goairclass.com",
-            desc: "Get response within 2-4 hours",
-            color: "text-radiant-coral",
-            bg: "bg-radiant-coral/10",
-            glow: "shadow-radiant-coral/20"
+            desc: "Send your query via email",
+            color: "text-[#f26a36]",
+            bg: "bg-[#f26a36]/10",
         },
         {
             icon: MessageSquare,
-            title: "WhatsApp",
-            value: "+91 91234-56789",
-            desc: "Chat with our support agent",
+            title: "WhatsApp Support",
+            value: "+91 91234 56789",
+            desc: "Chat instantly with our support team",
             color: "text-green-500",
             bg: "bg-green-500/10",
-            glow: "shadow-green-200/50"
+        },
+        {
+            icon: Bot,
+            title: "Live Chat",
+            value: "Instant replies available",
+            desc: "Talk with our AI travel assistant",
+            color: "text-purple-500",
+            bg: "bg-purple-500/10",
         }
     ];
 
-    const filteredFaqs = faqs.filter(f =>
-        f.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.answer.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const popularTopics = [
+        { icon: Ticket, text: "Track My Ticket" },
+        { icon: ExternalLink, text: "Cancel Booking" },
+        { icon: RefreshCw, text: "Request Refund" },
+        { icon: Calendar, text: "Change Travel Date" },
+        { icon: Armchair, text: "Seat Selection Help" }
+    ];
 
     return (
-        <div className="relative min-h-screen bg-[#f8fafc] pt-32 pb-24 overflow-hidden">
+        <div className="relative min-h-screen w-full flex flex-col items-center justify-start pt-24 pb-24 bg-[#f8fafc] overflow-hidden">
 
-            {/* Premium Background Elements */}
-            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-10%] right-[-5%] w-[45%] h-[45%] bg-radiant-coral/10 rounded-full blur-[140px] animate-pulse duration-[10s]" />
-                <div className="absolute bottom-[5%] left-[-10%] w-[35%] h-[35%] bg-blue-400/10 rounded-full blur-[120px] animate-pulse duration-[8s]" />
-                <div className="absolute top-[40%] right-[10%] w-64 h-64 border-2 border-gray-100 rounded-full opacity-30 animate-spin-slow" />
+            {/* Premium Background Design */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-pink-400/10 rounded-full blur-[140px]" />
+                <div className="absolute top-[20%] right-[-10%] w-[35%] h-[35%] bg-purple-400/10 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[0%] left-[20%] w-[40%] h-[40%] bg-[#f26a36]/5 rounded-full blur-[100px]" />
+                
+                {/* Abstract subtle travel elements */}
+                <svg className="absolute top-20 left-0 w-full h-[600px] opacity-[0.02]" viewBox="0 0 1000 600" preserveAspectRatio="none">
+                    <path d="M0,300 Q250,50 500,300 T1000,300" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="10,10" />
+                    <circle cx="250" cy="175" r="4" fill="currentColor" />
+                    <circle cx="500" cy="300" r="4" fill="currentColor" />
+                    <circle cx="750" cy="425" r="4" fill="currentColor" />
+                </svg>
             </div>
 
-            <div className="relative z-10 max-w-6xl mx-auto px-6">
+            <div className="relative z-10 w-full max-w-5xl px-6 flex flex-col items-center">
 
-                {/* Refined Header Section */}
-                <div className="text-center mb-20 animate-in fade-in slide-in-from-bottom-6 duration-1000">
-                    <div className="inline-flex items-center gap-3 bg-white/70 backdrop-blur-md py-2 px-6 rounded-full text-[10px] font-black uppercase tracking-[0.25em] text-radiant-coral shadow-sm border border-white mb-8">
-                        <Headphones className="h-4 w-4 animate-bounce" />
-                        <span>Support Center</span>
-                    </div>
-                    <h1 className="text-5xl md:text-7xl font-black text-deep-navy tracking-tight leading-none uppercase italic mb-8">
-                        How can we <span className="text-radiant-coral italic">help you?</span>
+                {/* Hero Section */}
+                <div className="text-center mb-12 space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700 mt-8 w-full">
+                    {/* Headline */}
+                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-slate-800 leading-[1.1]">
+                        Customer{' '}
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-[#f26a36]">
+                            Support
+                        </span> Center
                     </h1>
-                    <p className="text-gray-400 font-bold text-sm max-w-lg mx-auto leading-loose uppercase tracking-tighter opacity-80">
-                        Experience world-class assistance 24/7. Our team is dedicated to making <span className="text-deep-navy">every journey</span> seamless.
+
+                    {/* Subtitle */}
+                    <p className="text-slate-500 font-medium text-base md:text-lg max-w-2xl mx-auto leading-relaxed mt-6">
+                        Our support team is available 24/7 to help you with bookings, ticket tracking, cancellations, and travel assistance.
                     </p>
+
+                    {/* Search Bar */}
+                    <div className="max-w-2xl mx-auto mt-8 relative group">
+                        <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none z-10">
+                            <Search className="h-6 w-6 text-slate-400 group-focus-within:text-[#f26a36] transition-colors" />
+                        </div>
+                        <input 
+                            type="text" 
+                            className="w-full bg-white relative text-lg font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-medium rounded-full py-5 pl-16 pr-6 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.1)] border-2 border-white hover:border-slate-100 focus:border-[#f26a36] outline-none transition-all duration-300 focus:shadow-[0_0_0_4px_rgba(242,106,54,0.1)]"
+                            placeholder="Search help topics (booking, refund, cancellation...)" 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </div>
 
-                {/* Glassmorphism Contact Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-24">
+                {/* Quick Help Topics */}
+                <div className="w-full mb-16 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-100 flex flex-col items-center">
+                    <p className="text-[13px] font-bold text-slate-400 uppercase tracking-widest mb-6">Popular Help Topics</p>
+                    <div className="flex flex-wrap items-center justify-center gap-4">
+                        {popularTopics.map((topic, idx) => (
+                            <button key={idx} className="flex items-center gap-2 bg-white px-5 py-3 rounded-full shadow-sm border border-slate-100 hover:border-[#f26a36] hover:shadow-md hover:-translate-y-0.5 transition-all text-slate-700 hover:text-[#f26a36] group">
+                                <topic.icon className="h-4 w-4 text-slate-400 group-hover:text-[#f26a36] transition-colors" />
+                                <span className="text-sm font-bold tracking-wide">{topic.text}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Contact Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-16 animate-in fade-in zoom-in-95 duration-700 delay-200">
                     {contactMethods.map((method, idx) => {
                         const Icon = method.icon;
                         return (
@@ -110,86 +131,34 @@ const Support = () => {
                                         Connect Now <ArrowRight className="h-3 w-3" />
                                     </div>
                                 </div>
+                                <h3 className="text-[15px] font-bold text-slate-800 mb-2">{method.title}</h3>
+                                {idx === 1 ? (
+                                    <a href={`mailto:${method.value}`} className={`text-[15px] font-black ${method.color} mb-3 tracking-tight hover:underline`}>{method.value}</a>
+                                ) : (
+                                    <p className={`text-[17px] font-black ${method.color} mb-3 tracking-tight`}>{method.value}</p>
+                                )}
+                                <p className="text-[13px] font-medium text-slate-500 leading-relaxed mt-auto">{method.desc}</p>
                             </div>
                         );
                     })}
                 </div>
 
-                {/* Polished FAQ Section */}
-                <div className="relative group">
-                    <div className="absolute -inset-4 bg-white/50 blur-3xl rounded-[60px] opacity-50 transition-opacity duration-1000" />
-                    <div className="relative bg-white/60 backdrop-blur-2xl rounded-[50px] p-10 md:p-16 border border-white shadow-2xl overflow-hidden">
-
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-10 mb-16 relative z-10">
-                            <div className="space-y-3">
-                                <h2 className="text-4xl font-black text-deep-navy tracking-tighter italic">Common Enquiries</h2>
-                                <div className="w-16 h-2 bg-radiant-coral rounded-full group-hover:w-32 transition-all duration-700" />
-                                <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.25em]">Instant answers at your fingertips</p>
-                            </div>
-                            <div className="relative max-w-md w-full">
-                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-radiant-coral" />
-                                <input
-                                    type="text"
-                                    placeholder="Search topic or keyword..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-14 pr-8 py-5 bg-white border-2 border-gray-50 focus:border-radiant-coral/20 rounded-3xl outline-none text-sm font-black text-deep-navy transition-all shadow-sm focus:shadow-xl focus:shadow-radiant-coral/5"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-5 relative z-10">
-                            {filteredFaqs.map((faq, idx) => (
-                                <div
-                                    key={idx}
-                                    className={`group/item border-2 rounded-[32px] transition-all duration-500 ${activeFaq === idx ? 'border-radiant-coral/10 bg-white shadow-xl' : 'border-gray-50/50 hover:border-gray-100 bg-white/20'}`}
-                                >
-                                    <button
-                                        onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                                        className="w-full flex items-center justify-between p-8 text-left"
-                                    >
-                                        <div className="flex items-center gap-6">
-                                            <span className={`text-[12px] font-black w-8 h-8 rounded-full flex items-center justify-center transition-all ${activeFaq === idx ? 'bg-radiant-coral text-white scale-125' : 'bg-gray-50 text-gray-300 group-hover/item:bg-deep-navy group-hover/item:text-white'}`}>
-                                                {idx + 1}
-                                            </span>
-                                            <span className={`text-xl font-black tracking-tight leading-none transition-colors ${activeFaq === idx ? 'text-radiant-coral' : 'text-deep-navy'}`}>
-                                                {faq.question}
-                                            </span>
-                                        </div>
-                                        <div className={`p-2 rounded-2xl transition-all duration-500 ${activeFaq === idx ? 'bg-radiant-coral text-white rotate-180' : 'bg-gray-50 text-gray-400 group-hover/item:bg-white'}`}>
-                                            <ChevronDown className="h-6 w-6" />
-                                        </div>
-                                    </button>
-                                    {activeFaq === idx && (
-                                        <div className="px-10 md:px-20 pb-10 animate-in slide-in-from-top-4 duration-500">
-                                            <div className="h-px bg-gray-50 mb-8" />
-                                            <p className="text-gray-500 font-bold text-sm leading-relaxed max-w-3xl uppercase tracking-tighter">
-                                                {faq.answer}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
                 {/* Bottom Trust Indicators */}
-                <div className="mt-24 grid grid-cols-2 md:grid-cols-4 gap-12 opacity-40 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-1000">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl w-full border-t border-slate-200 pt-12 animate-in fade-in duration-700 delay-300">
                     {[
-                        { icon: ShieldCheck, label: "Encrypted Payments" },
-                        { icon: Clock, label: "Always Active" },
-                        { icon: UserCheck, label: "Official Partners" },
-                        { icon: ExternalLink, label: "Seamless Refunds" }
-                    ].map((item, i) => (
-                        <div key={i} className="flex flex-col items-center gap-4 group/trust">
-                            <div className="p-4 rounded-2xl bg-white border border-gray-100 shadow-sm group-hover/trust:text-radiant-coral transition-all">
-                                <item.icon className="h-10 w-10" strokeWidth={1.5} />
+                        { icon: Headphones, text: "24/7 Customer Support" },
+                        { icon: Ticket, text: "Instant Ticket Assistance" },
+                        { icon: ShieldCheck, text: "Secure Travel Booking" }
+                    ].map((item, idx) => (
+                        <div key={idx} className="flex flex-col sm:flex-row items-center justify-center gap-3 text-slate-600">
+                            <div className="bg-emerald-50 text-emerald-500 rounded-full p-2 border border-emerald-100">
+                                <item.icon className="h-5 w-5" />
                             </div>
-                            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-deep-navy">{item.label}</span>
+                            <span className="text-[14px] font-bold text-slate-700">{item.text}</span>
                         </div>
                     ))}
                 </div>
+
             </div>
         </div>
     );

@@ -90,30 +90,34 @@ const FlightHero = ({ setView }) => {
     );
 
     return (
-        <section className="relative w-full flex flex-col items-center justify-start pt-4 pb-48 bg-gradient-to-r from-[#003580] to-[#0052cc] overflow-visible">
+        <section className="relative min-h-[60vh] w-full flex flex-col items-center justify-start pt-28 pb-12 bg-[#0a0f1a]">
             {/* Cinematic Background Layer */}
             <div className="absolute inset-0 overflow-hidden">
                 <img
                     src={backgrounds[0]}
                     alt="Flight Destination"
-                    className="absolute inset-0 w-full h-full object-cover opacity-80"
+                    className="absolute inset-0 w-full h-full object-cover transform scale-105 animate-subtle-zoom opacity-80"
                     loading="eager"
                 />
-                <div className="absolute inset-0 bg-slate-900/40" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#0a0f1a]/90 via-[#0a0f1a]/50 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a] via-transparent to-transparent opacity-60" />
             </div>
 
-            <div className="relative z-10 w-full max-w-6xl mx-auto px-4 flex flex-col items-start space-y-2 mt-4">
+            <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col items-start space-y-8 mt-12">
                 {/* Premium Typography Tagline */}
-                <div className="w-full text-left">
-                    <h1 className="text-2xl md:text-[28px] font-extrabold text-white tracking-tight mb-2">
-                        Book flights and explore the world.
+                <div className="w-full text-left space-y-4 max-w-2xl">
+                    <h1 className="text-5xl md:text-[64px] font-black text-white leading-[1.1] tracking-tight text-shadow-lg">
+                        Book flights and <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f26a36] to-[#ff8c5a]">
+                            explore the world.
+                        </span>
                     </h1>
                 </div>
 
                 {/* Main Search Widget */}
                 <div className="w-full flex-col">
                     {/* Tabs */}
-                    <div className="flex mb-0 w-max">
+                    <div className="flex mb-4 gap-2 w-max">
                         {[
                             { id: 'one-way', label: 'ONE WAY' },
                             { id: 'round-trip', label: 'ROUND TRIP' },
@@ -124,10 +128,10 @@ const FlightHero = ({ setView }) => {
                                 <button
                                     key={type.id}
                                     onClick={() => setTripType(type.id)}
-                                    className={`px-4 py-2 text-[10px] font-bold tracking-widest transition-all ${isActive
-                                        ? 'bg-[#ffffff20] border-b-2 border-white text-white'
-                                        : 'bg-transparent text-white/70 hover:text-white'
-                                        } ${idx === 0 ? 'rounded-tl-md' : ''}`}
+                                    className={`px-6 py-2.5 text-[11px] font-bold tracking-widest transition-all rounded-full ${isActive
+                                        ? 'bg-[#f26a36] text-white shadow-lg'
+                                        : 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white backdrop-blur-md border border-white/10'
+                                        }`}
                                 >
                                     {type.label}
                                 </button>
@@ -136,7 +140,7 @@ const FlightHero = ({ setView }) => {
                     </div>
 
                     {/* Form Fields Row */}
-                    <div className="flex flex-col lg:flex-row w-full shadow-2xl rounded-tr-md rounded-b-md">
+                    <div className="flex flex-col lg:flex-row w-full bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-2xl border border-white/20">
 
                         {/* From & To (Combined block with divider/swap) */}
                         <div className="flex lg:w-2/5 relative bg-white border-r border-[#e5e7eb] rounded-bl-md lg:rounded-bl-none">
@@ -432,14 +436,14 @@ const FlightHero = ({ setView }) => {
                                 
                                 navigate(`/flight-results?${params.toString()}`);
                             }}
-                            className="bg-[#f26a36] hover:bg-[#e05d2e] text-white px-8 py-4 lg:py-0 font-bold text-[13px] tracking-widest transition-colors flex items-center justify-center min-w-[140px] rounded-br-md lg:rounded-tr-md"
+                            className="bg-gradient-to-r from-[#f26a36] to-[#ff8c5a] hover:to-[#f26a36] text-white px-10 py-6 lg:py-0 font-black text-sm tracking-widest transition-all hover:shadow-[0_0_30px_rgba(242,106,54,0.4)] active:scale-[0.98] flex items-center justify-center min-w-[160px] rounded-b-2xl lg:rounded-b-none lg:rounded-r-2xl"
                         >
                             SEARCH
                         </button>
                     </div>
 
                     {/* Filters Row */}
-                    <div className="flex flex-col sm:flex-row flex-wrap items-center mt-4 gap-x-6 gap-y-3 text-white text-[12px]">
+                    <div className="flex flex-col sm:flex-row flex-wrap items-center mt-6 gap-x-6 gap-y-3 text-white text-[12px]">
                         <div className="relative" ref={airlineRef}>
                             <div 
                                 className="flex items-center cursor-pointer opacity-80 hover:opacity-100 bg-white/10 px-3 py-1.5 rounded-md transition-colors"

@@ -7,7 +7,7 @@ import WhyChoose from './components/WhyChoose'
 import PopularRoutes from './components/PopularRoutes'
 import OperatorLogos from './components/OperatorLogos'
 import PrimoSection from './components/PrimoSection'
-import OperatorList from './components/OperatorList'
+
 import Footer from './components/Footer'
 import CancelTicket from './components/CancelTicket'
 import CancelHotel from './components/CancelHotel'
@@ -48,6 +48,13 @@ import BusTicket from './components/BusTicket';
 import TrackTicket from './components/TrackTicket'
 import Support from './components/Support'
 import LegalPage from './components/LegalPage'
+import AboutUs from './components/AboutUs'
+import Careers from './components/Careers'
+import Blog from './components/Blog'
+import Press from './components/Press'
+import Contact from './components/Contact'
+import RefundPolicy from './components/RefundPolicy'
+import CancellationPolicy from './components/CancellationPolicy'
 import MyBookings from './components/MyBookings'
 import OffersPage from './components/OffersPage'
 import FlightResults from './components/FlightResults'
@@ -332,6 +339,15 @@ function App() {
                     <Route path="/my-bookings" element={<MyBookings setView={handleNavigate} />} />
                     <Route path="/offers" element={<OffersPage />} />
                     <Route path="/legal/:type" element={<LegalPage />} />
+                    
+                    {/* New Footer Links */}
+                    <Route path="/about" element={<AboutUs />} />
+                    <Route path="/careers" element={<Careers />} />
+                    <Route path="/blog" element={<Blog />} />
+                    <Route path="/press" element={<Press />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/refund-policy" element={<RefundPolicy />} />
+                    <Route path="/cancellation-policy" element={<CancellationPolicy />} />
                     <Route path="/flight-results" element={<FlightResults setView={handleNavigate} />} />
                     <Route path="/flight-confirmation/:bookingId" element={<FlightBookingConfirmation />} />
                     <Route path="/flight-ticket/:pnr" element={<FlightTicket />} />
@@ -407,7 +423,6 @@ function App() {
 
             {!isDashboardPath && (
                 <footer>
-                    <OperatorList />
                     <Footer />
                 </footer>
             )}
