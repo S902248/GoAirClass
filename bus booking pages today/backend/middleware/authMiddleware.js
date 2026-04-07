@@ -8,10 +8,12 @@ const authMiddleware = (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+        const secret = process.env.JWT_SECRET || 'fallback_secret';
+        const decoded = jwt.verify(token, secret);
         req.user = decoded;
         next();
     } catch (ex) {
+        console.error("[Auth] JWT Verification Failed:", ex.message, "Token start:", token.substring(0, 10));
         res.status(400).json({ error: 'Invalid token.' });
     }
 };

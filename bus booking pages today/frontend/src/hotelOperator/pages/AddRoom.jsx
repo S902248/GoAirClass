@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { BedDouble, Users, Hash, Plus, X, UploadCloud, Info } from 'lucide-react';
-import { addRoom, getMyHotelsForDropdown } from '../../api/operatorApi';
+import { addRoom, getRoomById, updateRoom, getMyHotelsForDropdown } from '../../api/operatorApi';
 import { useHotelOperator } from '../HotelOperatorContext';
 
 const AddRoom = () => {
     const navigate = useNavigate();
+    const { id } = useParams();
+    const isEdit = !!id;
     const { hasPerm } = useHotelOperator();
 
-    if (!hasPerm('AddRooms')) {
-        return <div className="p-8 text-center text-red-500 font-bold">Access Denied: You do not have permission to add rooms.</div>;
+    // Permissions check
+    if (!hasPerm('AddRooms') && !hasPerm('ManageRooms')) {
+        return <div className="p-8 text-center text-red-500 font-bold">Access Denied: You do not have permission to manage rooms.</div>;
     }
 
     const [hotels, setHotels] = useState([]);
@@ -25,13 +28,49 @@ const AddRoom = () => {
     const [image, setImage] = useState('');
     const [loading, setLoading] = useState(false);
 
+    // ── Fetch Hotels for dropdown ──────────────────────────────────────────
     useEffect(() => {
         getMyHotelsForDropdown().then(d => {
             const h = d.hotels || [];
             setHotels(h);
-            if (h.length > 0) setForm(f => ({ ...f, hotelId: h[0]._id }));
+            if (!isEdit && h.length > 0) setForm(f => ({ ...f, hotelId: h[0]._id }));
         });
-    }, []);
+    }, [isEdit]);
+
+    // ── Fetch Room for edit ────────────────────────────────────────────────
+    useEffect(() => {
+        if (isEdit) {
+            const fetchRoom = async () => {
+                try {
+                    setLoading(true);
+                    const res = await getRoomById(id);
+                    if (res.room) {
+                        const r = res.room;
+                        setForm({
+                            hotelId: r.hotelId?._id || r.hotelId || '',
+                            roomType: r.roomType || 'Standard',
+                            pricePerNight: r.price || r.pricePerNight || '',
+                            originalPrice: r.originalPrice || '',
+                            discountPrice: r.discountPrice || '',
+                            capacity: r.capacity || 2,
+                            totalRooms: r.totalRooms || 1,
+                            size: r.size || '',
+                            bedType: r.bedType || '',
+                            view: r.view || '',
+                            amenities: r.amenities || [],
+                            images: r.images || [],
+                            status: r.status || 'available'
+                        });
+                    }
+                } catch (err) {
+                    alert('Failed to fetch room details');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchRoom();
+        }
+    }, [id, isEdit]);
 
     const handleAddAmenity = () => {
         if (amenity.trim() && !form.amenities.includes(amenity.trim())) {
@@ -55,11 +94,16 @@ const AddRoom = () => {
         if (!form.hotelId) return alert('Please select a hotel first.');
         setLoading(true);
         try {
-            await addRoom(form);
-            alert('Room added successfully to inventory.');
+            if (isEdit) {
+                await updateRoom(id, form);
+                alert('Room updated successfully.');
+            } else {
+                await addRoom(form);
+                alert('Room added successfully to inventory.');
+            }
             navigate('/hotel-operator/rooms');
         } catch (err) {
-            alert(err?.error || 'Failed to add room');
+            alert(err?.error || (isEdit ? 'Failed to update room' : 'Failed to add room'));
         } finally {
             setLoading(false);
         }
@@ -68,8 +112,12 @@ const AddRoom = () => {
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
             <div>
-                <h1 className="text-3xl font-black text-gray-800 uppercase tracking-tight">Add New Room</h1>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Expand your hotel's inventory</p>
+                <h1 className="text-3xl font-black text-gray-800 uppercase tracking-tight">
+                    {isEdit ? 'Edit Room' : 'Add New Room'}
+                </h1>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+                    {isEdit ? 'Update your room details' : "Expand your hotel's inventory"}
+                </p>
             </div>
 
             <div className="bg-white rounded-[2rem] border border-gray-50 shadow-sm p-8">
@@ -79,10 +127,12 @@ const AddRoom = () => {
                     <div className="space-y-1.5 pb-6 border-b border-gray-50">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Select Hotel</label>
                         <select required value={form.hotelId} onChange={e => setForm({ ...form, hotelId: e.target.value })}
-                            className="w-full bg-fuchsia-50 border-2 border-fuchsia-100/50 rounded-2xl py-4 px-4 text-sm font-black text-fuchsia-900 focus:ring-4 focus:ring-fuchsia-100 outline-none transition-all appearance-none cursor-pointer">
+                            disabled={isEdit}
+                            className="w-full bg-fuchsia-50 border-2 border-fuchsia-100/50 rounded-2xl py-4 px-4 text-sm font-black text-fuchsia-900 focus:ring-4 focus:ring-fuchsia-100 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50">
                             {hotels.length === 0 && <option value="">No hotels available</option>}
                             {hotels.map(h => <option key={h._id} value={h._id}>{h.hotelName} ({h.city}) — {h.status}</option>)}
                         </select>
+                        {isEdit && <p className="text-[10px] font-bold text-gray-400 mt-2">Note: Hotel cannot be changed during editing.</p>}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -133,12 +183,14 @@ const AddRoom = () => {
                             <input required type="number" min="1" placeholder="Quantity" value={form.totalRooms}
                                 onChange={e => setForm({ ...form, totalRooms: Number(e.target.value) })}
                                 className="w-full bg-gray-50 border border-transparent rounded-2xl py-3 px-4 text-sm font-medium focus:ring-4 focus:ring-fuchsia-50 focus:border-fuchsia-200 outline-none transition-all" />
-                            <div className="flex items-start gap-2 p-3 bg-fuchsia-50/50 rounded-xl border border-fuchsia-100 mt-2">
-                                <Info className="h-3 w-3 text-fuchsia-400 mt-0.5" />
-                                <p className="text-[10px] font-bold text-fuchsia-700 leading-tight uppercase tracking-wider">
-                                    System will automatically generate {form.totalRooms || 1} unique room numbers (e.g. {form.roomType === 'Family' ? 'FR' : form.roomType === 'Standard' ? 'ST' : 'RM'}-101) in your inventory.
-                                </p>
-                            </div>
+                            {!isEdit && (
+                                <div className="flex items-start gap-2 p-3 bg-fuchsia-50/50 rounded-xl border border-fuchsia-100 mt-2">
+                                    <Info className="h-3 w-3 text-fuchsia-400 mt-0.5" />
+                                    <p className="text-[10px] font-bold text-fuchsia-700 leading-tight uppercase tracking-wider">
+                                        System will automatically generate {form.totalRooms || 1} unique room numbers (e.g. {form.roomType === 'Family' ? 'FR' : form.roomType === 'Standard' ? 'ST' : 'RM'}-101) in your inventory.
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-1.5">
@@ -213,7 +265,7 @@ const AddRoom = () => {
                     <div className="pt-6 border-t border-gray-50 flex justify-end">
                         <button type="submit" disabled={loading || !form.hotelId}
                             className="px-8 py-4 bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-fuchsia-200 disabled:opacity-50 disabled:active:scale-100">
-                            {loading ? 'Submitting...' : 'Add Room'}
+                            {loading ? 'Processing...' : isEdit ? 'Update Room' : 'Add Room'}
                         </button>
                     </div>
 

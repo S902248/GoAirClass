@@ -238,6 +238,76 @@ const deleteHotel = async (req, res) => {
     }
 };
 
+const getHotelDashboardStats = async (req, res) => {
+    try {
+        const HotelBooking = require('../../models/hotel/HotelBooking');
+        const dayjs = require('dayjs');
+
+        const [
+            totalHotels,
+            pendingApprovals,
+            approvedHotels,
+            totalBookings,
+            revenueData,
+            recentHotels,
+            rawWeeklyStats
+        ] = await Promise.all([
+            Hotel.countDocuments(),
+            Hotel.countDocuments({ status: 'pending' }),
+            Hotel.countDocuments({ status: 'approved' }),
+            HotelBooking.countDocuments({ status: 'confirmed' }),
+            HotelBooking.aggregate([
+                { $match: { paymentStatus: 'Completed' } },
+                { $group: { _id: null, total: { $sum: '$totalPrice' } } }
+            ]),
+            Hotel.find().sort({ createdAt: -1 }).limit(5),
+            HotelBooking.aggregate([
+                { 
+                    $match: { 
+                        createdAt: { $gte: dayjs().subtract(7, 'days').startOf('day').toDate() },
+                        paymentStatus: 'Completed'
+                    } 
+                },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                        bookings: { $sum: 1 },
+                        revenue: { $sum: "$totalPrice" }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ])
+        ]);
+
+        // Standardize the last 7 days to ensure charts are never empty
+        const weeklyStats = [];
+        for (let i = 6; i >= 0; i--) {
+            const dateStr = dayjs().subtract(i, 'days').format('YYYY-MM-DD');
+            const dayData = rawWeeklyStats.find(s => s._id === dateStr);
+            weeklyStats.push({
+                _id: dateStr,
+                bookings: dayData ? dayData.bookings : 0,
+                revenue: dayData ? dayData.revenue : 0
+            });
+        }
+
+        res.json({
+            success: true,
+            stats: {
+                totalHotels,
+                pendingApprovals,
+                approvedHotels,
+                totalBookings,
+                totalRevenue: revenueData[0]?.total || 0,
+            },
+            recentHotels,
+            chartData: weeklyStats
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 module.exports = {
     createHotel,
     getAllHotels,
@@ -250,4 +320,5 @@ module.exports = {
     blockHotel,
     unblockHotel,
     deleteHotel,
+    getHotelDashboardStats,
 };

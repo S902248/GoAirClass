@@ -56,18 +56,27 @@ const HotelBooking = () => {
     const [couponError, setCouponError] = useState('');
     const [validatingCoupon, setValidatingCoupon] = useState(false);
 
-    // ── Price Calculations ──────────────────────────────────────────
+    // ── Price Calculations (Multiplicative: Guests × Nights) ────────
     const nights = Math.max(1, Math.ceil(
         (new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)
     ));
-    const roomPrice = (room?.discountPrice || room?.price || 0) * nights;
-    const taxes = room?.taxes ? (room.taxes * nights) : Math.round(roomPrice * TAX_RATE);
-    const discount = room?.originalPrice && room.originalPrice > (room?.discountPrice || room?.price)
-        ? ((room.originalPrice - (room?.discountPrice || room?.price)) * nights)
-        : 0;
-
-    // Base amount before coupon but after standard discount
+    
+    // Per Person Base Price
+    const basePrice = room?.discountPrice || room?.price || 0;
+    
+    // Total Room Price = Price Per Person × No. of Guests × Nights
+    const roomPrice = basePrice * guests * nights;
+    
+    // Taxes (18% GST)
+    const taxes = Math.round(roomPrice * TAX_RATE);
+    
+    // Total before coupon
     const subTotal = roomPrice + taxes;
+
+    // Calculate total discount (Original - Current) multiplied by guests and nights
+    const discount = room?.originalPrice && room.originalPrice > basePrice
+        ? ((room.originalPrice - basePrice) * guests * nights)
+        : 0;
 
     // Calculate final coupon discount based on applied coupon
     let finalCouponDiscount = 0;
@@ -151,6 +160,13 @@ const HotelBooking = () => {
         };
         checkAvail();
     }, [room?._id, checkIn, checkOut]);
+
+    // ── Auto-adjust guests if room capacity changes ──────────────────
+    useEffect(() => {
+        if (room?.capacity && guests > room.capacity) {
+            setGuests(room.capacity);
+        }
+    }, [room?.capacity, guests]);
 
     if (!hotel || !room) {
         return (
@@ -383,11 +399,25 @@ const HotelBooking = () => {
                                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 focus:outline-none focus:border-[#006ce4]" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Guests</label>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 flex justify-between items-center">
+                                        Guests
+                                        {guests >= (room?.capacity || 1) && (
+                                            <span className="flex items-center gap-1 text-[8px] text-amber-600 animate-pulse">
+                                                <AlertCircle className="h-2 w-2" /> Max Limit Reached
+                                            </span>
+                                        )}
+                                    </label>
                                     <select value={guests} onChange={e => setGuests(Number(e.target.value))}
                                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 focus:outline-none focus:border-[#006ce4]">
-                                        {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} Guest{n > 1 ? 's' : ''}</option>)}
+                                        {[1, 2, 3, 4, 5, 6].map(n => (
+                                            <option key={n} value={n} disabled={n > (room?.capacity || 1)}>
+                                                {n} Guest{n > 1 ? 's' : ''} {n > (room?.capacity || 1) ? '(Exceeds Capacity)' : ''}
+                                            </option>
+                                        ))}
                                     </select>
+                                    <p className={`text-[9px] font-bold mt-1 uppercase tracking-wider text-center ${guests > (room?.capacity || 1) ? 'text-red-500' : 'text-gray-400'}`}>
+                                        Max {room?.capacity || 1} Guests Allowed
+                                    </p>
                                 </div>
                             </div>
 

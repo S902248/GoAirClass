@@ -7,6 +7,11 @@ const Booking = require('../models/Booking');
 const mongoose = require('mongoose');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const stationController = require('../controllers/stationController');
+const adminDashboardController = require('../controllers/adminDashboardController');
+const { getHotelDashboardStats } = require('../controllers/hotel/hotelController');
+
+// GET /api/admin/hotel/dashboard
+router.get('/hotel/dashboard', authMiddleware, getHotelDashboardStats);
 
 // ─── Helper: build scoped query filters based on admin role ───────────────────
 // superadmin → no filter (sees all)
@@ -122,6 +127,12 @@ router.get('/stats', authMiddleware, async (req, res) => {
     }
 });
 
+// GET /api/admin/dashboard
+router.get('/dashboard', authMiddleware, adminDashboardController.getAdminDashboard);
+
+// GET /api/admin/transport/dashboard
+router.get('/transport/dashboard', authMiddleware, adminDashboardController.getTransportDashboard);
+
 // GET /api/admin/users — global user list (not admin-scoped)
 router.get('/users', authMiddleware, async (req, res) => {
     try {
@@ -152,12 +163,27 @@ router.get('/my-operators', authMiddleware, async (req, res) => {
 // GET /api/admin/my-bookings — bookings scoped to logged-in admin's buses
 router.get('/my-bookings', authMiddleware, async (req, res) => {
     try {
-        const { bookingFilter } = await getScopeFilters(req.user);
+        const { operatorId } = req.query;
+        let { bookingFilter, operatorIds, busIds } = await getScopeFilters(req.user);
+
+        // If specific operator requested, further refine the filter
+        if (operatorId && operatorId !== 'all') {
+            const requestedOpId = new mongoose.Types.ObjectId(operatorId);
+
+            // Find buses for this specific operator to apply to booking filter
+            const busesForOp = await Bus.find({ operator: requestedOpId }, '_id');
+            const busIdsForOp = busesForOp.map(b => b._id);
+            bookingFilter.bus = { $in: busIdsForOp };
+        }
+
         const bookings = await Booking.find(bookingFilter)
             .populate('bus', 'busName busNumber')
+            .populate('route')
             .sort({ createdAt: -1 });
+            
         res.json({ success: true, bookings });
     } catch (error) {
+        console.error('Error fetching scoped bookings:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });

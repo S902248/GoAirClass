@@ -13,7 +13,8 @@ const busSchema = new mongoose.Schema({
         type: { type: String, enum: ['seater', 'sleeper', 'ladies', 'ladies-sleeper'] },
         deck: { type: String, enum: ['lower', 'upper'], default: 'lower' },
         price: Number
-    }]
+    }],
+    status: { type: String, enum: ['active', 'inactive'], default: 'active' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Bus', busSchema);

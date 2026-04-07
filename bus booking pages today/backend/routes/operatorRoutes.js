@@ -49,7 +49,7 @@ router.post('/login', async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: operator._id, role: 'operator' },
+            { id: operator._id, role: operator.role || 'bus_operator' },
             JWT_SECRET,
             { expiresIn: '1d' }
         );
@@ -64,19 +64,11 @@ router.post('/login', async (req, res) => {
 
 // Protected Operator Routes
 // Public/Admin route to get operators with bus counts
-// - superadmin: sees ALL operators
-// - admin: sees only operators linked to their adminId
+// - ALL roles see ALL operators (no scoping)
 router.get(['/all', '/'], authMiddleware, async (req, res) => {
     try {
-        // Build match filter based on role
+        // No filter — return all operators regardless of role
         const matchFilter = {};
-        if (req.user.role === 'admin') {
-            const mongoose = require('mongoose');
-            matchFilter.adminId = mongoose.Types.ObjectId.createFromHexString
-                ? mongoose.Types.ObjectId.createFromHexString(req.user.id.toString())
-                : new mongoose.Types.ObjectId(req.user.id);
-        }
-        // superadmin: no filter, matchFilter stays {}
 
         const operators = await require('../models/Operator').aggregate([
             { $match: matchFilter },
@@ -107,13 +99,37 @@ router.get(['/all', '/'], authMiddleware, async (req, res) => {
     }
 });
 
-// Update
-router.put('/:id', operatorAuthMiddleware, async (req, res) => {
+// Update (admin can edit any operator)
+router.put('/:id', authMiddleware, async (req, res) => {
     try {
-        const operator = await Operator.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updateData = { ...req.body };
+        const operator = await Operator.findById(req.params.id);
+        
+        if (!operator) return res.status(404).json({ error: 'Operator not found' });
+
+        // Update each field provided in body
+        Object.keys(updateData).forEach(key => {
+            if (key === 'password' && !updateData[key]) return; // Skip empty password
+            operator[key] = updateData[key];
+        });
+
+        await operator.save();
         res.json(operator);
     } catch (err) {
         res.status(400).json({ error: err.message });
+    }
+});
+
+// Toggle Status (Active <-> Inactive)
+router.patch('/:id/status', authMiddleware, async (req, res) => {
+    try {
+        const op = await Operator.findById(req.params.id);
+        if (!op) return res.status(404).json({ error: 'Operator not found' });
+        op.status = op.status === 'Active' ? 'Inactive' : 'Active';
+        await op.save();
+        res.json({ message: 'Status updated', status: op.status });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 

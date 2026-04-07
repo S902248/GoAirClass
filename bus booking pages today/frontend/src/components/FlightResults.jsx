@@ -43,9 +43,9 @@ const FlightResults = ({ setView }) => {
         const fetchFlights = async () => {
             try {
                 setLoading(true);
-                const data = await flightApi.searchFlights({ 
-                    from: searchFrom, 
-                    to: searchTo, 
+                const data = await flightApi.searchFlights({
+                    from: searchFrom,
+                    to: searchTo,
                     date: searchDate,
                     adults,
                     children,
@@ -121,22 +121,22 @@ const FlightResults = ({ setView }) => {
         let result = [...flights];
         // Airline Filter
         if (selectedAirlines.length > 0) result = result.filter(f => selectedAirlines.includes(f.airline));
-        
+
         // Stops Filter
         if (selectedStops.length > 0) result = result.filter(f => selectedStops.includes(f.stops));
-        
+
         // Departure Time Filter
         if (selectedTimes.length > 0) result = result.filter(f => selectedTimes.some(t => isTimeInRange(f.departureTime, t)));
-        
+
         // Arrival Time Filter
         if (selectedArrivalTimes.length > 0) result = result.filter(f => selectedArrivalTimes.some(t => isTimeInRange(f.arrivalTime, t)));
-        
+
         // Price Filter
         result = result.filter(f => f.price <= priceRange);
-        
+
         // Duration Filter
         result = result.filter(f => parseInt(f.duration || 0) <= durationRange);
-        
+
         // Refundable Filter
         if (isRefundable) result = result.filter(f => f.isRefundable);
 
@@ -205,7 +205,7 @@ const FlightResults = ({ setView }) => {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <button 
+                            <button
                                 onClick={() => navigate('/')}
                                 className="px-4 py-1.5 border border-gray-200 hover:bg-gray-50 rounded-full text-xs font-bold text-gray-700 transition-all shadow-sm"
                             >
@@ -225,13 +225,12 @@ const FlightResults = ({ setView }) => {
                     <div className="max-w-7xl mx-auto px-4 md:px-8">
                         <div className="flex overflow-x-auto no-scrollbar py-2 gap-2">
                             {dates.map((d, i) => (
-                                <div 
-                                    key={i} 
-                                    className={`min-w-[120px] p-2 rounded-xl cursor-pointer border-2 transition-all flex flex-col items-center justify-center ${
-                                        d.active 
-                                        ? 'bg-white border-[#f26a36] shadow-md' 
+                                <div
+                                    key={i}
+                                    className={`min-w-[120px] p-2 rounded-xl cursor-pointer border-2 transition-all flex flex-col items-center justify-center ${d.active
+                                        ? 'bg-white border-[#f26a36] shadow-md'
                                         : 'bg-transparent border-transparent hover:border-gray-200'
-                                    }`}
+                                        }`}
                                 >
                                     <span className={`text-[10px] font-bold uppercase ${d.active ? 'text-gray-400' : 'text-gray-400'}`}>{d.date}</span>
                                     <span className={`text-sm font-black mt-0.5 ${d.active ? 'text-gray-900' : 'text-gray-700'}`}>{d.price}</span>
@@ -251,12 +250,12 @@ const FlightResults = ({ setView }) => {
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
                             <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                                 <h3 className="text-base font-black text-gray-900">Filters</h3>
-                                <button 
-                                    onClick={() => { 
-                                        setSelectedAirlines([]); setSelectedStops([]); setSelectedTimes([]); 
+                                <button
+                                    onClick={() => {
+                                        setSelectedAirlines([]); setSelectedStops([]); setSelectedTimes([]);
                                         setSelectedArrivalTimes([]); setPriceRange(50000); setDurationRange(1440);
                                         setIsRefundable(false);
-                                    }} 
+                                    }}
                                     className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-widest bg-white px-2 py-1 rounded-md border border-gray-200 shadow-sm transition-all"
                                 >
                                     Reset
@@ -281,8 +280,8 @@ const FlightResults = ({ setView }) => {
                                 <h4 className="text-[12px] font-black text-gray-400 uppercase tracking-[0.1em] mb-4">Departure Time</h4>
                                 <div className="grid grid-cols-2 gap-2">
                                     {[{ id: "Early Morning", icon: "🌅" }, { id: "Morning", icon: "☀️" }, { id: "Afternoon", icon: "🌤️" }, { id: "Evening", icon: "🌙" }].map(time => (
-                                        <button 
-                                            key={time.id} 
+                                        <button
+                                            key={time.id}
                                             onClick={() => toggleFilter(selectedTimes, setSelectedTimes, time.id)}
                                             className={`p-2 rounded-xl flex flex-col items-center gap-1 border-2 transition-all ${selectedTimes.includes(time.id) ? 'bg-blue-50 border-[#003580] scale-[0.98]' : 'bg-white border-gray-100 hover:border-gray-200'}`}
                                         >
@@ -297,8 +296,8 @@ const FlightResults = ({ setView }) => {
                                 <h4 className="text-[12px] font-black text-gray-400 uppercase tracking-[0.1em] mb-4">Arrival Time</h4>
                                 <div className="grid grid-cols-2 gap-2">
                                     {[{ id: "Early Morning", icon: "🌅" }, { id: "Morning", icon: "☀️" }, { id: "Afternoon", icon: "🌤️" }, { id: "Evening", icon: "🌙" }].map(time => (
-                                        <button 
-                                            key={time.id} 
+                                        <button
+                                            key={time.id}
                                             onClick={() => toggleFilter(selectedArrivalTimes, setSelectedArrivalTimes, time.id)}
                                             className={`p-2 rounded-xl flex flex-col items-center gap-1 border-2 transition-all ${selectedArrivalTimes.includes(time.id) ? 'bg-indigo-50 border-indigo-600 scale-[0.98]' : 'bg-white border-gray-100 hover:border-gray-200'}`}
                                         >
@@ -322,7 +321,7 @@ const FlightResults = ({ setView }) => {
 
                             <div className="p-5 border-b border-gray-100">
                                 <h4 className="text-[12px] font-black text-gray-400 uppercase tracking-[0.1em] mb-4">Refundable</h4>
-                                <div 
+                                <div
                                     className="flex items-center gap-3 cursor-pointer group"
                                     onClick={() => setIsRefundable(!isRefundable)}
                                 >
@@ -360,7 +359,7 @@ const FlightResults = ({ setView }) => {
                                     { id: 'Cheapest', label: 'Cheapest', sub: 'Low to High' },
                                     { id: 'Fastest', label: 'Fastest', sub: 'Non-Stop first' },
                                 ].map((tab) => (
-                                    <button 
+                                    <button
                                         key={tab.id}
                                         onClick={() => setSortBy(tab.id)}
                                         className={`flex-1 py-4 px-6 border-b-4 transition-all ${sortBy === tab.id ? 'border-[#003580] bg-blue-50/30' : 'border-transparent hover:bg-gray-50'}`}
@@ -373,7 +372,7 @@ const FlightResults = ({ setView }) => {
                             <div className="flex items-center gap-2 p-3 bg-gray-50/50 overflow-x-auto no-scrollbar">
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Extra:</span>
                                 {['Early Departure', 'Late Departure'].map((tab) => (
-                                    <button 
+                                    <button
                                         key={tab}
                                         onClick={() => setSortBy(tab)}
                                         className={`whitespace-nowrap px-4 py-1.5 rounded-full text-[11px] font-black transition-all ${sortBy === tab ? 'bg-[#003580] text-white shadow-md' : 'bg-white text-gray-600 border border-gray-100 hover:border-gray-200'}`}
@@ -400,13 +399,12 @@ const FlightResults = ({ setView }) => {
                                 const isSelected = selectedFlightForSummary?._id === flight._id;
                                 // Mock data for live view
                                 const viewCount = Math.floor(Math.random() * 15) + 5;
-                                
+
                                 return (
-                                    <div 
-                                        key={idx} 
-                                        className={`group bg-white rounded-2xl border-2 transition-all duration-300 overflow-hidden cursor-pointer ${
-                                            isSelected ? 'border-[#003580] shadow-xl ring-4 ring-blue-50' : 'border-gray-100 hover:border-gray-200 shadow-sm'
-                                        }`}
+                                    <div
+                                        key={idx}
+                                        className={`group bg-white rounded-2xl border-2 transition-all duration-300 overflow-hidden cursor-pointer ${isSelected ? 'border-[#003580] shadow-xl ring-4 ring-blue-50' : 'border-gray-100 hover:border-gray-200 shadow-sm'
+                                            }`}
                                         onClick={() => setSelectedFlightForSummary(flight)}
                                     >
                                         {/* Urgency/Offer Banner */}
@@ -472,7 +470,7 @@ const FlightResults = ({ setView }) => {
                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 italic">Best Fare</p>
                                                         <p className="text-3xl font-black text-gray-900">₹{flight.price.toLocaleString('en-IN')}</p>
                                                     </div>
-                                                    
+
                                                     <div className="flex flex-col w-full gap-2">
                                                         <button
                                                             onClick={(e) => {
@@ -509,7 +507,7 @@ const FlightResults = ({ setView }) => {
                                                         <span className="text-green-600 font-black">Meal Available</span>
                                                     </div>
                                                 </div>
-                                                
+
                                                 {flight.availableSeats < 10 && (
                                                     <div className="animate-bounce-slow flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-100 text-[10px] font-black text-red-600 uppercase tracking-wider">
                                                         Only {flight.availableSeats} seats left at this price!
@@ -527,7 +525,7 @@ const FlightResults = ({ setView }) => {
                                 </div>
                                 <h3 className="text-xl font-black text-gray-900 mb-2">No Flights Found</h3>
                                 <p className="text-gray-500 font-bold">Try adjusting your filters or search for another date.</p>
-                                <button 
+                                <button
                                     onClick={() => {
                                         setSelectedAirlines([]); setSelectedStops([]); setSelectedTimes([]);
                                         setPriceRange(50000);

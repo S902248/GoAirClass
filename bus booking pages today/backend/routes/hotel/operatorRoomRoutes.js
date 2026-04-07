@@ -70,6 +70,20 @@ router.get('/my-hotels', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/hotel-operator/rooms/:id — get one room
+router.get('/:id', async (req, res) => {
+    try {
+        const room = await Room.findById(req.params.id).populate('hotelId');
+        if (!room) return res.status(404).json({ error: 'Room not found.' });
+
+        // Verify ownership
+        const hotel = await Hotel.findOne({ _id: room.hotelId._id, operatorId: req.hotelOperator._id });
+        if (!hotel) return res.status(403).json({ error: 'Access denied.' });
+
+        res.json({ success: true, room });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST /api/hotel-operator/rooms — add room
 router.post('/', async (req, res) => {
     try {
@@ -152,10 +166,51 @@ router.put('/:id', async (req, res) => {
         const hotel = await Hotel.findOne({ _id: room.hotelId._id, operatorId: req.hotelOperator._id });
         if (!hotel) return res.status(403).json({ error: 'Access denied.' });
 
-        const allowed = ['roomType', 'pricePerNight', 'capacity', 'totalRooms', 'bedType', 'amenities', 'status'];
+        const prevTotalRooms = Number(room.totalRooms) || 0;
+        const newTotalRooms = req.body.totalRooms !== undefined ? Number(req.body.totalRooms) : prevTotalRooms;
+
+        // Update basic fields
+        const allowed = ['roomType', 'capacity', 'bedType', 'amenities', 'status', 'size', 'view', 'originalPrice', 'discountPrice'];
         allowed.forEach(f => { if (req.body[f] !== undefined) room[f] = req.body[f]; });
+
+        // Specific mappings
+        if (req.body.pricePerNight !== undefined) room.price = Number(req.body.pricePerNight);
+        if (req.body.totalRooms !== undefined) room.totalRooms = newTotalRooms;
+
         await room.save();
-        res.json({ success: true, room });
+
+        // ── SYNC INVENTORY IF QUANTITY INCREASED ─────────────────────────────
+        if (newTotalRooms > prevTotalRooms) {
+            const diff = newTotalRooms - prevTotalRooms;
+            const typePrefixes = {
+                'Family': 'FR', 'Standard': 'ST', 'Deluxe': 'DX', 'Suite': 'SU', 'Executive': 'EX', 'Single': 'SI', 'Double': 'DO'
+            };
+            const prefix = typePrefixes[room.roomType] || 'RM';
+            
+            const inventoryData = [];
+            for (let i = 1; i <= diff; i++) {
+                // Room Numbers follow 100 + current_count pattern
+                const roomNo = 100 + prevTotalRooms + i;
+                const roomNumber = `${prefix}-${roomNo}`;
+                inventoryData.push({
+                    hotelId: hotel._id,
+                    roomTypeId: room._id,
+                    roomNumber,
+                    status: 'available'
+                });
+            }
+            await RoomInventory.insertMany(inventoryData);
+        }
+
+        // ── RECALCULATE HOTEL GLOBAL COUNT ───────────────────────────────────
+        const totalCount = await Room.aggregate([
+            { $match: { hotelId: hotel._id } },
+            { $group: { _id: null, total: { $sum: '$totalRooms' } } }
+        ]);
+        hotel.totalRooms = totalCount[0]?.total || 0;
+        await hotel.save();
+
+        res.json({ success: true, room, message: `Room updated to ${newTotalRooms} total. ${newTotalRooms > prevTotalRooms ? (newTotalRooms - prevTotalRooms) + ' new units added.' : ''}` });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -171,7 +226,7 @@ router.put('/update-price', async (req, res) => {
             if (!room) continue;
             const hotel = await Hotel.findOne({ _id: room.hotelId._id, operatorId: req.hotelOperator._id });
             if (!hotel) continue;
-            room.pricePerNight = newPrice;
+            room.price = Number(newPrice); // Corrected from pricePerNight
             await room.save();
             results.push({ roomId, newPrice });
         }

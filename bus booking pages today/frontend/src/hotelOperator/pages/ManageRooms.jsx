@@ -117,7 +117,10 @@ const ManageRooms = () => {
                                             <Link to="/hotel-operator/rooms/inventory" className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 font-black uppercase tracking-widest text-[9px]">
                                                 <Layers className="h-4 w-4" /> <span>Inventory</span>
                                             </Link>
-                                            <button className="p-2 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"><Edit className="h-4 w-4" /></button>
+                                            <Link to={`/hotel-operator/rooms/edit/${room._id}`}
+                                                className="p-2 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                                                <Edit className="h-4 w-4" />
+                                            </Link>
                                             <button onClick={() => handleDelete(room._id)} className="p-2 bg-red-50 text-[#d84e55] hover:bg-red-100 rounded-lg transition-colors"><Trash2 className="h-4 w-4" /></button>
                                         </div>
                                     </td>

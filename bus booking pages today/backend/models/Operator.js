@@ -4,10 +4,11 @@ const bcrypt = require('bcryptjs');
 const operatorSchema = new mongoose.Schema({
     name: { type: String, required: true },
     contactNumber: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     companyName: { type: String, required: true },
     address: { type: String },
+    role: { type: String, default: 'bus_operator' },
     status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
     // Admin Data Isolation: link operator to the admin who created them
     adminId: {

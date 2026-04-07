@@ -1,19 +1,21 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Hotel, MapPin, Star, Plus, X, UploadCloud, ImagePlus } from 'lucide-react';
-import { addHotel } from '../../api/operatorApi';
+import { addHotel, getHotelById, updateHotel } from '../../api/operatorApi';
 import { useHotelOperator } from '../HotelOperatorContext';
 
 const ACCEPTED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 const RegisterHotel = () => {
     const navigate = useNavigate();
+    const { id } = useParams();
+    const isEdit = !!id;
     const { hasPerm } = useHotelOperator();
     const fileInputRef = useRef(null);
 
     // Permissions check
-    if (!hasPerm('AddHotel')) {
-        return <div className="p-8 text-center text-red-500 font-bold">Access Denied: You do not have permission to add hotels.</div>;
+    if (!hasPerm('AddHotel') && !hasPerm('ManageHotels')) {
+        return <div className="p-8 text-center text-red-500 font-bold">Access Denied: You do not have permission to manage hotels.</div>;
     }
 
     const [form, setForm] = useState({
@@ -25,7 +27,39 @@ const RegisterHotel = () => {
 
     // Each entry: { file: File, preview: objectURL }
     const [selectedImages, setSelectedImages] = useState([]);
+    const [existingImages, setExistingImages] = useState([]);
     const [dragOver, setDragOver] = useState(false);
+
+    // ── Fetch for Edit ────────────────────────────────────────────────────────
+    useEffect(() => {
+        if (isEdit) {
+            const fetchHotel = async () => {
+                try {
+                    setLoading(true);
+                    const res = await getHotelById(id);
+                    if (res.hotel) {
+                        const h = res.hotel;
+                        setForm({
+                            hotelName: h.hotelName || '',
+                            city: h.city || '',
+                            address: h.address || '',
+                            description: h.description || '',
+                            starRating: h.starRating || 3,
+                            amenities: h.amenities || [],
+                            latitude: h.latitude || '',
+                            longitude: h.longitude || ''
+                        });
+                        setExistingImages(h.images || []);
+                    }
+                } catch (err) {
+                    alert('Failed to fetch hotel details');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchHotel();
+        }
+    }, [id, isEdit]);
 
     // ── Helpers ────────────────────────────────────────────────────────────────
     const addFiles = useCallback((files) => {
@@ -42,6 +76,10 @@ const RegisterHotel = () => {
             URL.revokeObjectURL(prev[idx].preview);
             return prev.filter((_, i) => i !== idx);
         });
+    };
+
+    const removeExistingImage = (url) => {
+        setExistingImages(prev => prev.filter(u => u !== url));
     };
 
     // ── Drag & Drop handlers ───────────────────────────────────────────────────
@@ -76,17 +114,28 @@ const RegisterHotel = () => {
             fd.append('latitude', form.latitude);
             fd.append('longitude', form.longitude);
             fd.append('amenities', JSON.stringify(form.amenities));
+            
+            // For editing, we also might track existing images to keep
+            if (isEdit) {
+                fd.append('existingImages', JSON.stringify(existingImages));
+            }
+
             selectedImages.forEach(({ file }) => fd.append('images', file));
 
-            await addHotel(fd);
+            if (isEdit) {
+                await updateHotel(id, fd);
+                alert('Hotel updated successfully!');
+            } else {
+                await addHotel(fd);
+                alert('Hotel submitted successfully. Awaiting admin approval.');
+            }
 
             // Free object-URLs
             selectedImages.forEach(({ preview }) => URL.revokeObjectURL(preview));
 
-            alert('Hotel submitted successfully. Awaiting admin approval.');
             navigate('/hotel-operator/hotels');
         } catch (err) {
-            alert(err?.error || 'Failed to add hotel');
+            alert(err?.error || (isEdit ? 'Failed to update hotel' : 'Failed to add hotel'));
         } finally {
             setLoading(false);
         }
@@ -95,8 +144,12 @@ const RegisterHotel = () => {
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
             <div>
-                <h1 className="text-3xl font-black text-gray-800 uppercase tracking-tight">Add New Hotel</h1>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Submit a property for admin approval</p>
+                <h1 className="text-3xl font-black text-gray-800 uppercase tracking-tight">
+                    {isEdit ? 'Edit Hotel' : 'Add New Hotel'}
+                </h1>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+                    {isEdit ? 'Update your property details' : 'Submit a property for admin approval'}
+                </p>
             </div>
 
             <div className="bg-white rounded-[2rem] border border-gray-50 shadow-sm p-8">
@@ -234,11 +287,34 @@ const RegisterHotel = () => {
                                 </div>
                             </div>
 
-                            {/* Preview Thumbnails */}
+                            {/* Existing Images (for edit mode) */}
+                            {isEdit && existingImages.length > 0 && (
+                                <div className="mb-4">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                                        Current Images ({existingImages.length})
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {existingImages.map((url, idx) => (
+                                            <div key={idx} className="relative group w-16 h-16 rounded-xl overflow-hidden border border-gray-100 shadow-sm transition-transform hover:scale-105">
+                                                <img src={url} alt="Hotel" className="w-full h-full object-cover" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeExistingImage(url)}
+                                                    className="absolute inset-0 flex items-center justify-center bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <X className="h-5 w-5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Preview Thumbnails (for new files) */}
                             {selectedImages.length > 0 && (
                                 <div>
                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-                                        {selectedImages.length} image{selectedImages.length > 1 ? 's' : ''} selected
+                                        New Images ({selectedImages.length})
                                     </p>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedImages.map(({ preview, file }, idx) => (
@@ -275,7 +351,7 @@ const RegisterHotel = () => {
                     <div className="pt-6 border-t border-gray-50 flex justify-end">
                         <button type="submit" disabled={loading}
                             className="px-8 py-4 bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-fuchsia-200 disabled:opacity-50">
-                            {loading ? 'Submitting...' : 'Submit Hotel'}
+                            {loading ? 'Processing...' : isEdit ? 'Update Hotel' : 'Submit Hotel'}
                         </button>
                     </div>
 

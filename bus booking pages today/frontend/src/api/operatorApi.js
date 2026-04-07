@@ -52,6 +52,12 @@ export const getMyHotels = async () => {
     catch (e) { handle(e); }
 };
 
+/** GET /api/hotel-operator/hotels/:id */
+export const getHotelById = async (id) => {
+    try { return (await OpAxios.get(`/hotels/${id}`)).data; }
+    catch (e) { handle(e); }
+};
+
 /** POST /api/hotel-operator/hotels
  *  @param {FormData} formData — hotel fields + image files appended under "images" key
  */
@@ -81,6 +87,12 @@ export const deleteMyHotel = async (id) => {
 /** GET /api/hotel-operator/rooms */
 export const getMyRooms = async () => {
     try { return (await OpAxios.get('/rooms')).data; }
+    catch (e) { handle(e); }
+};
+
+/** GET /api/hotel-operator/rooms/:id */
+export const getRoomById = async (id) => {
+    try { return (await OpAxios.get(`/rooms/${id}`)).data; }
     catch (e) { handle(e); }
 };
 

@@ -1,17 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Calendar, MapPin, Users, ChevronDown, Check } from 'lucide-react';
+import { Search, Calendar, MapPin, Users, ChevronDown, Check, X } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const HotelHero = ({ setView }) => {
     const navigate = useNavigate();
+    const checkInRef = useRef(null);
+    const checkOutRef = useRef(null);
     const [destination, setDestination] = useState('Goa, India');
+    const [checkInDate, setCheckInDate] = useState('2026-02-25');
+    const [checkOutDate, setCheckOutDate] = useState('2026-02-27');
+    const [guests, setGuests] = useState(2);
     const [tagFilters, setTagFilters] = useState({
         freeCancel: false,
         payAtHotel: false,
         ixigoAssured: false
     });
+
+    const formatDateDisplay = (dateString) => {
+        if (!dateString) return null;
+        const [year, month, day] = dateString.split('-');
+        return `${day}-${month}-${year}`;
+    };
+
+    // Prevent checkout before checkin
+    const getMinCheckOutDate = () => {
+        if (checkInDate) {
+            const nextDay = new Date(checkInDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            return nextDay.toISOString().split('T')[0];
+        }
+        return new Date().toISOString().split('T')[0];
+    };
 
     const toggleFilter = (key) => setTagFilters(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -20,7 +41,14 @@ const HotelHero = ({ setView }) => {
             toast.error("Add first destination", { position: "top-right", theme: "colored" });
             return;
         }
-        navigate('/hotel-results', { state: { city: destination } });
+        navigate('/hotel-results', { 
+            state: { 
+                city: destination,
+                checkIn: checkInDate,
+                checkOut: checkOutDate,
+                guests: guests
+            } 
+        });
     };
 
     return (
@@ -60,7 +88,7 @@ const HotelHero = ({ setView }) => {
                     {/* Form Fields Row */}
                     <div className="flex flex-col lg:flex-row w-full bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0_0_0_/_0.3)] rounded-2xl overflow-hidden border border-white/20">
 
-                        {/* Destination */}
+                        {/* Destination (35%) */}
                         <div className="flex lg:w-[35%] relative bg-transparent">
                             <div className="flex-1 flex items-center px-6 py-5 cursor-pointer hover:bg-slate-50/80 transition-colors group">
                                 <div className="bg-slate-100 p-2.5 rounded-xl mr-4 group-hover:bg-[#f26a36]/10 transition-colors">
@@ -81,43 +109,94 @@ const HotelHero = ({ setView }) => {
 
                         <div className="w-px bg-slate-200 h-12 my-auto hidden lg:block"></div>
 
-                        {/* Check-in & Check-out */}
-                        <div className="flex lg:w-[30%] bg-transparent border-t lg:border-t-0 border-slate-100">
-                            <div className="flex-1 flex items-center px-6 py-5 cursor-pointer hover:bg-slate-50/80 transition-colors group border-r border-slate-100">
-                                <div className="bg-slate-100 p-2.5 rounded-xl mr-4 group-hover:bg-[#f26a36]/10 transition-colors">
+                        {/* Check-in & Check-out (40%) */}
+                        <div className="flex lg:w-[40%] bg-transparent border-t lg:border-t-0 border-slate-100">
+                            {/* Check-in */}
+                            <div 
+                                onClick={() => { try { checkInRef.current?.showPicker(); } catch(e) {} }}
+                                className="flex-1 flex items-center px-6 py-5 cursor-pointer transition-colors group border-r border-slate-100 group/datepicker relative overflow-hidden"
+                            >
+                                <input 
+                                    ref={checkInRef}
+                                    type="date" 
+                                    className="absolute inset-0 opacity-0 pointer-events-none z-10 w-full h-full"
+                                    value={checkInDate || ''}
+                                    min={new Date().toISOString().split('T')[0]}
+                                    onChange={(e) => {
+                                        setCheckInDate(e.target.value);
+                                        // Auto-adjust checkout if it's before the new checkin
+                                        if (checkOutDate && e.target.value >= checkOutDate) {
+                                            const nextDay = new Date(e.target.value);
+                                            nextDay.setDate(nextDay.getDate() + 1);
+                                            setCheckOutDate(nextDay.toISOString().split('T')[0]);
+                                        }
+                                    }} 
+                                />
+                                <div className="bg-slate-100 p-2.5 rounded-xl mr-4 group-hover:bg-[#f26a36]/10 transition-colors pointer-events-none relative z-0">
                                     <Calendar className="h-5 w-5 text-slate-400 group-hover:text-[#f26a36] transition-colors" />
                                 </div>
-                                <div className="flex flex-col whitespace-nowrap">
+                                <div className="flex flex-col whitespace-nowrap flex-1 pointer-events-none relative z-0">
                                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Check-in</span>
-                                    <span className="text-base font-bold text-slate-800">25-02-2026</span>
+                                    {checkInDate ? (
+                                        <span className="text-base font-bold text-slate-800">{formatDateDisplay(checkInDate)}</span>
+                                    ) : (
+                                        <span className="text-base font-medium text-slate-400">Select Date</span>
+                                    )}
                                 </div>
                             </div>
-                            <div className="flex-1 flex items-center px-6 py-5 cursor-pointer hover:bg-slate-50/80 transition-colors group pl-6">
-                                <div className="flex flex-col whitespace-nowrap">
+                            
+                            {/* Check-out */}
+                            <div 
+                                onClick={() => { try { checkOutRef.current?.showPicker(); } catch(e) {} }}
+                                className="flex-1 flex items-center px-6 py-5 cursor-pointer transition-colors group pl-6 group/datepicker relative overflow-hidden"
+                            >
+                                <input 
+                                    ref={checkOutRef}
+                                    type="date" 
+                                    className="absolute inset-0 opacity-0 pointer-events-none z-10 w-full h-full"
+                                    value={checkOutDate || ''}
+                                    min={getMinCheckOutDate()}
+                                    onChange={(e) => setCheckOutDate(e.target.value)} 
+                                />
+                                <div className="flex flex-col whitespace-nowrap flex-1 pointer-events-none relative z-0">
                                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Check-out</span>
-                                    <span className="text-base font-bold text-slate-800">27-02-2026</span>
+                                    {checkOutDate ? (
+                                        <span className="text-base font-bold text-slate-800">{formatDateDisplay(checkOutDate)}</span>
+                                    ) : (
+                                        <span className="text-base font-medium text-slate-400">Select Date</span>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
                         <div className="w-px bg-slate-200 h-12 my-auto hidden lg:block"></div>
 
-                        {/* Rooms & Guests */}
-                        <div className="flex lg:w-[20%] bg-transparent border-t lg:border-t-0 border-slate-100 items-center px-6 py-5 cursor-pointer hover:bg-slate-50/80 transition-colors group">
-                            <div className="bg-slate-100 p-2.5 rounded-xl mr-4 group-hover:bg-[#f26a36]/10 transition-colors">
-                                <Users className="h-5 w-5 text-slate-400 group-hover:text-[#f26a36] transition-colors" />
+                        {/* Guests (15%) */}
+                        <div className="flex lg:w-[15%] bg-transparent border-t lg:border-t-0 border-slate-100 relative group">
+                            <div className="flex-1 flex items-center px-6 py-5 cursor-pointer hover:bg-slate-50/80 transition-colors">
+                                <div className="bg-slate-100 p-2.5 rounded-xl mr-4 group-hover:bg-[#f26a36]/10 transition-colors">
+                                    <Users className="h-5 w-5 text-slate-400 group-hover:text-[#f26a36] transition-colors" />
+                                </div>
+                                <div className="flex flex-col flex-1">
+                                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Guests</span>
+                                    <select 
+                                        className="bg-transparent border-none outline-none text-base font-bold text-slate-800 cursor-pointer appearance-none w-full"
+                                        value={guests}
+                                        onChange={(e) => setGuests(parseInt(e.target.value))}
+                                    >
+                                        {[...Array(10)].map((_, i) => (
+                                            <option key={i+1} value={i+1} className="text-slate-800 font-medium">{i+1} Guests</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <ChevronDown className="h-4 w-4 text-slate-400 pointer-events-none absolute right-6 group-hover:text-[#f26a36]" />
                             </div>
-                            <div className="flex flex-col flex-1 max-w-full overflow-hidden">
-                                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Guests & Rooms</span>
-                                <span className="text-base font-bold text-slate-800 truncate">2 Guests, 1 Room</span>
-                            </div>
-                            <ChevronDown className="h-4 w-4 text-slate-400 ml-2" />
                         </div>
 
-                        {/* Search Button */}
+                        {/* Search Button (10%) */}
                         <button
                             onClick={handleSearch}
-                            className="bg-gradient-to-r from-[#f26a36] to-[#ff8c5a] hover:to-[#f26a36] text-white px-10 py-6 lg:py-0 font-black text-sm tracking-widest transition-all hover:shadow-[0_0_30px_rgba(242_106_54_/_0.4)] active:scale-[0.98] flex items-center justify-center min-w-[160px]"
+                            className="lg:w-[10%] bg-gradient-to-r from-[#f26a36] to-[#ff8c5a] hover:to-[#f26a36] text-white py-6 lg:py-0 font-black text-sm tracking-widest transition-all hover:shadow-[0_0_30px_rgba(242_106_54_/_0.4)] active:scale-[0.98] flex items-center justify-center"
                         >
                             SEARCH
                         </button>

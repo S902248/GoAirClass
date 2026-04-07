@@ -152,12 +152,13 @@ const MyHotels = () => {
 
                                     {/* Actions */}
                                     <td className="px-4 py-4">
-                                        <div className="flex gap-2">
-                                            <button className="p-2 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <div className="flex gap-2 text-[#d84e55]">
+                                            <Link to={`/hotel-operator/hotels/edit/${h._id}`}
+                                                className="p-2 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                                                 <Edit className="h-4 w-4" />
-                                            </button>
+                                            </Link>
                                             <button onClick={() => handleDelete(h._id)}
-                                                className="p-2 bg-red-50 text-[#d84e55] hover:bg-red-100 rounded-lg transition-colors">
+                                                className="p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors">
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
                                         </div>

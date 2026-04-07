@@ -41,8 +41,12 @@ const AppContent = () => {
                     <Route path="/hotels/add" element={operator ? <RegisterHotel /> : <Navigate to="/hotel-operator/login" replace />} />
                     {/* My Hotels */}
                     <Route path="/hotels" element={operator ? <MyHotels /> : <Navigate to="/hotel-operator/login" replace />} />
+                    {/* Edit Hotel */}
+                    <Route path="/hotels/edit/:id" element={operator ? <RegisterHotel /> : <Navigate to="/hotel-operator/login" replace />} />
                     {/* Add Room */}
                     <Route path="/rooms/add" element={operator ? <AddRoom /> : <Navigate to="/hotel-operator/login" replace />} />
+                    {/* Edit Room */}
+                    <Route path="/rooms/edit/:id" element={operator ? <AddRoom /> : <Navigate to="/hotel-operator/login" replace />} />
                     {/* Manage Rooms */}
                     <Route path="/rooms" element={operator ? <ManageRooms /> : <Navigate to="/hotel-operator/login" replace />} />
                     {/* Room Inventory */}

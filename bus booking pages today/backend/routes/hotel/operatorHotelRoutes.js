@@ -41,7 +41,7 @@ router.get('/', async (req, res) => {
 router.post('/', upload.array('images', 10), async (req, res) => {
     try {
         const { hotelName, city, address, description, starRating, latitude, longitude } = req.body;
-
+        
         // amenities may arrive as a JSON string from FormData
         let amenities = [];
         if (req.body.amenities) {
@@ -77,17 +77,52 @@ router.post('/', upload.array('images', 10), async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/hotel-operator/hotels/:id — get one hotel
+router.get('/:id', async (req, res) => {
+    try {
+        const hotel = await Hotel.findOne({ _id: req.params.id, operatorId: req.hotelOperator._id });
+        if (!hotel) return res.status(404).json({ error: 'Hotel not found or access denied.' });
+        res.json({ success: true, hotel });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // PUT /api/hotel-operator/hotels/:id — edit own hotel
-router.put('/:id', async (req, res) => {
+router.put('/:id', upload.array('images', 10), async (req, res) => {
     try {
         const hotel = await Hotel.findOne({ _id: req.params.id, operatorId: req.hotelOperator._id });
         if (!hotel) return res.status(404).json({ error: 'Hotel not found or access denied.' });
 
-        const allowed = ['hotelName', 'city', 'address', 'description', 'amenities', 'images', 'starRating', 'latitude', 'longitude'];
-        allowed.forEach(f => { if (req.body[f] !== undefined) hotel[f] = req.body[f]; });
-        hotel.status = 'pending'; // reset to pending after edit
+        // Update basic fields
+        const allowed = ['hotelName', 'city', 'address', 'description', 'starRating', 'latitude', 'longitude'];
+        allowed.forEach(f => {
+            if (req.body[f] !== undefined) {
+                hotel[f] = (f === 'starRating' || f === 'latitude' || f === 'longitude') ? Number(req.body[f]) : req.body[f];
+            }
+        });
 
+        // Handle amenities (JSON string from FormData)
+        if (req.body.amenities) {
+            try { hotel.amenities = JSON.parse(req.body.amenities); }
+            catch { hotel.amenities = req.body.amenities.split(',').map(a => a.trim()).filter(Boolean); }
+        }
+
+        // Handle Images: Merge existing ones with new ones
+        let finalImages = [];
+        if (req.body.existingImages) {
+            try { finalImages = JSON.parse(req.body.existingImages); }
+            catch { finalImages = []; }
+        } else {
+            // If not provided, we assume they want to keep original ones IF no new ones added?
+            // Actually, the frontend should always send the list to keep.
+            finalImages = hotel.images || [];
+        }
+
+        const newImagePaths = req.files ? req.files.map(f => `/uploads/hotels/${f.filename}`) : [];
+        hotel.images = [...finalImages, ...newImagePaths];
+
+        hotel.status = 'pending'; // reset to pending after edit
         await hotel.save();
+
         res.json({ success: true, hotel });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });

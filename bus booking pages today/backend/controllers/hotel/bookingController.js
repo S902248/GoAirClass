@@ -160,6 +160,15 @@ async function createBooking(req, res) {
         const hotel = await Hotel.findById(hotelId);
         if (!hotel) return res.status(404).json({ success: false, message: 'Hotel not found' });
 
+        // --- GUEST CAPACITY VALIDATION ---
+        const selectedGuests = Number(guests) || 1;
+        if (selectedGuests > room.capacity) {
+            return res.status(400).json({
+                success: false,
+                message: `Guest count (${selectedGuests}) exceeds the maximum capacity of ${room.capacity} for this room type.`
+            });
+        }
+
         // Availability check
         const confirmedBookings = await HotelBooking.countDocuments({
             roomId,
@@ -215,6 +224,17 @@ async function createBooking(req, res) {
             }
         }
 
+        const bookingGuests = Number(guests) || 1;
+        const nights = Math.max(1, Math.ceil(
+            (new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24)
+        ));
+
+        // ── PRICE CALCULATION LOGIC ─────────────────────────────────────────
+        const basePerPerson = room.discountPrice || room.price || 0;
+        const calculatedRoomPrice = basePerPerson * bookingGuests * nights;
+        const calculatedTaxes = Math.round(calculatedRoomPrice * 0.18);
+        const calculatedTotal = calculatedRoomPrice + calculatedTaxes - (Number(couponDiscount) || 0);
+
         const booking = new HotelBooking({
             bookingId,
             hotelId,
@@ -229,11 +249,11 @@ async function createBooking(req, res) {
             guestPhone: guestPhone || '',
             checkInDate,
             checkOutDate,
-            guests: guests || 1,
-            totalPrice: totalAmount || roomPrice || room.price,
+            guests: bookingGuests,
+            totalPrice: calculatedTotal, // Using the new guest-multiplied total
             couponCode: couponCode || '',
             couponDiscount: couponDiscount || 0,
-            taxes: taxes || 0,
+            taxes: calculatedTaxes,
             billingAddress: billingAddress || '',
             pincode: pincode || '',
             state: state || '',

@@ -205,7 +205,7 @@ const Navbar = ({ setView, activeTab, setActiveTab, isHome, isLoggedIn, user, on
 
                         {/* Operator Login Link */}
                         <div
-                            onClick={() => navigate('/operator/login')}
+                            onClick={() => navigate(activeTab === 'hotel' ? '/hotel-operator/login' : '/operator/login')}
                             className="flex items-center gap-3 pl-6 border-l border-gray-100 cursor-pointer group hover:bg-gray-50/50 py-2 rounded-2xl transition-all"
                         >
                             <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center group-hover:bg-red-50 transition-all border border-gray-100 group-hover:border-red-100">
@@ -266,7 +266,7 @@ const Navbar = ({ setView, activeTab, setActiveTab, isHome, isLoggedIn, user, on
 
                             {/* Mobile Operator Section */}
                             <button
-                                onClick={() => { navigate('/operator/login'); setIsMobileMenuOpen(false); }}
+                                onClick={() => { navigate(activeTab === 'hotel' ? '/hotel-operator/login' : '/operator/login'); setIsMobileMenuOpen(false); }}
                                 className="w-full flex items-center justify-between p-4 bg-red-50 text-[#d84e55] rounded-xl border border-red-100"
                             >
                                 <span className="uppercase tracking-widest font-black text-[10px]">

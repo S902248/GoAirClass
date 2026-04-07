@@ -13,19 +13,19 @@ Axios.interceptors.request.use(
         // For now, prioritize 'token' for the main customer app.
         let token = localStorage.getItem('token');
 
-        // If we are likely in the admin or operator panel (based on URL), we might prefer those tokens.
-        // A simple heuristic: check window.location.pathname
+        // Heuristic: check window.location.pathname to prioritize the right token
         if (typeof window !== 'undefined') {
-            if (window.location.pathname.startsWith('/operator') && localStorage.getItem('operatorToken')) {
-                token = localStorage.getItem('operatorToken');
-            } else if (window.location.pathname.startsWith('/admin') && localStorage.getItem('adminToken')) {
-                token = localStorage.getItem('adminToken');
+            const path = window.location.pathname;
+            if (path.startsWith('/operator')) {
+                token = localStorage.getItem('operatorToken') || localStorage.getItem('token');
+            } else if (path.startsWith('/admin') || path.startsWith('/admine')) {
+                token = localStorage.getItem('adminToken') || localStorage.getItem('token');
             }
         }
 
-        // Final fallback if token is still empty but others exist
+        // Final fallback if no specific token found
         if (!token) {
-            token = localStorage.getItem('operatorToken') || localStorage.getItem('adminToken');
+            token = localStorage.getItem('token') || localStorage.getItem('adminToken') || localStorage.getItem('operatorToken');
         }
 
         if (token) {

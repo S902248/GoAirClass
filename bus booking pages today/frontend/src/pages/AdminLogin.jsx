@@ -20,9 +20,11 @@ const AdminLogin = ({ onLoginSuccess }) => {
         try {
             const response = await adminLogin(formData);
             if (response.success) {
-                // Clear any previous operator sessions
+                // Clear any previous operator/admin sessions
                 localStorage.removeItem('operatorToken');
                 localStorage.removeItem('operatorData');
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('token');
 
                 localStorage.setItem('token', response.token);
                 localStorage.setItem('userData', JSON.stringify(response.user));

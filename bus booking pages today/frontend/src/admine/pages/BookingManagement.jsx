@@ -1,23 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Ban, CheckCircle, CreditCard, ChevronRight, XCircle } from 'lucide-react';
-import { getScopedBookings } from '../../api/adminApi';
+import { Search, Filter, Ban, CheckCircle, CreditCard, ChevronRight, XCircle, User } from 'lucide-react';
+import { getScopedBookings, getAllOperators } from '../../api/adminApi';
 
 
 const BookingManagement = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
+    const [selectedOperator, setSelectedOperator] = useState('all');
     const [bookings, setBookings] = useState([]);
+    const [operators, setOperators] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchBookings();
+        fetchOperators();
     }, []);
+
+    useEffect(() => {
+        fetchBookings();
+    }, [selectedOperator]);
+
+    const fetchOperators = async () => {
+        try {
+            const data = await getAllOperators();
+            // getAllOperators directly returns an array
+            setOperators(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('Error fetching operators:', err);
+        }
+    };
 
     const fetchBookings = async () => {
         try {
             setLoading(true);
-            // /admin/my-bookings returns { success, bookings } scoped to this admin's buses
-            const data = await getScopedBookings();
+            // Pass the selectedOperator to filter on the backend
+            const data = await getScopedBookings(selectedOperator);
             setBookings(data?.bookings || []);
         } catch (err) {
             console.error('Error fetching bookings:', err);
@@ -38,7 +54,7 @@ const BookingManagement = () => {
     const filteredBookings = bookings.filter(b => {
         const bookingId = b._id || '';
         const passengerName = b.passengerName || '';
-        const busName = b.bus?.name || '';
+        const busName = b.bus?.busName || 'N/A';
 
         const matchesSearch = bookingId.toLowerCase().includes(searchQuery.toLowerCase()) ||
             passengerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -56,15 +72,30 @@ const BookingManagement = () => {
                     <p className="text-gray-400 font-bold uppercase text-xs tracking-[0.2em]">Manage all passenger seat reservations</p>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
+                    {/* Operator Filter */}
+                    <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-400" />
+                        <select
+                            value={selectedOperator}
+                            onChange={(e) => setSelectedOperator(e.target.value)}
+                            className="bg-white border-2 border-gray-100 rounded-2xl py-3 px-6 text-xs font-black uppercase tracking-widest focus:border-[#d84e55] outline-none transition-all cursor-pointer min-w-[200px]"
+                        >
+                            <option value="all">All Operators</option>
+                            {operators.map(op => (
+                                <option key={op._id} value={op._id}>{op.companyName || op.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
                     <div className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 group-focus-within:text-[#d84e55] transition-colors" />
                         <input
                             type="text"
-                            placeholder="Search by ID, Bus or Passenger..."
+                            placeholder="Search ID, Bus or Passenger..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-white border-2 border-gray-100 rounded-2xl py-3 pl-12 pr-6 text-sm font-medium focus:border-[#d84e55] focus:ring-4 focus:ring-red-50 transition-all w-80"
+                            className="bg-white border-2 border-gray-100 rounded-2xl py-3 pl-12 pr-6 text-sm font-medium focus:border-[#d84e55] focus:ring-4 focus:ring-red-50 transition-all w-64 md:w-80"
                         />
                     </div>
 
@@ -123,7 +154,7 @@ const BookingManagement = () => {
                                     <div className="space-y-1">
                                         <p className="text-xs font-black text-deep-navy uppercase tracking-tight">{b.bus?.busName || 'N/A'}</p>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                            {b.route ? `${b.route.fromCity} → ${b.route.toCity}` : 'N/A'}
+                                            {b.route ? `${b.route.fromCity || b.route.from} → ${b.route.toCity || b.route.to}` : 'N/A'}
                                         </p>
                                     </div>
                                 </td>

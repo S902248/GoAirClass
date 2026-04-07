@@ -19,9 +19,9 @@ export const getDashboardStats = async () => {
 };
 
 // Get bookings scoped to the logged-in admin's buses
-export const getScopedBookings = async () => {
+export const getScopedBookings = async (operatorId = 'all') => {
     try {
-        const response = await Axios.get('/admin/my-bookings');
+        const response = await Axios.get(`/admin/my-bookings?operatorId=${operatorId}`);
         return response.data;
     } catch (error) {
         throw error.response ? error.response.data : new Error('Network Error');
@@ -101,6 +101,33 @@ export const deleteOperator = async (operatorId) => {
     }
 };
 
+export const getHotelDashboardStats = async () => {
+    try {
+        const response = await Axios.get('/admin/hotel/dashboard');
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};
+
+export const updateOperator = async (operatorId, operatorData) => {
+    try {
+        const response = await Axios.put(`/operators/${operatorId}`, operatorData);
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};
+
+export const toggleOperatorStatus = async (operatorId) => {
+    try {
+        const response = await Axios.patch(`/operators/${operatorId}/status`);
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};
+
 export const getAllRoutes = async () => {
     try {
         const response = await Axios.get('/routes/all');
@@ -140,6 +167,24 @@ export const getAllUsers = async () => {
 export const getAllBookings = async () => {
     try {
         const response = await Axios.get('/bookings');
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};
+
+export const getAdminDashboardSummary = async () => {
+    try {
+        const response = await Axios.get('/admin/dashboard');
+        return response.data;
+    } catch (error) {
+        throw error.response ? error.response.data : new Error('Network Error');
+    }
+};
+
+export const getTransportDashboardSummary = async () => {
+    try {
+        const response = await Axios.get('/admin/transport/dashboard');
         return response.data;
     } catch (error) {
         throw error.response ? error.response.data : new Error('Network Error');

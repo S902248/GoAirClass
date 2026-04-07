@@ -154,6 +154,7 @@ const Sidebar = ({ user, onLogout }) => {
                 <SectionLabel label="Transport" />
                 <NavGroup icon={Bus} label="Transport" defaultOpen>
                     {[
+                        { icon: LayoutDashboard, label: 'Dashboard', to: '/admine/transport/dashboard' },
                         { icon: UsersRound, label: 'Bus Operators', to: '/admine/operators' },
                         { icon: Route, label: 'Routes', to: '/admine/routes' },
                         { icon: Bus, label: 'Bus Management', to: '/admine/bus-management' },
@@ -191,6 +192,7 @@ const Sidebar = ({ user, onLogout }) => {
                 <SectionLabel label="Hotels" />
                 <NavGroup icon={Hotel} label="Hotels">
                     {[
+                        { icon: LayoutDashboard, label: 'Hotel Dashboard', to: '/admine/hotels/dashboard' },
                         { icon: Hotel, label: 'All Hotels', to: '/admine/hotels' },
                         { icon: Hotel, label: 'Pending Approval', to: '/admine/hotels/pending' },
                         { icon: Hotel, label: 'Approved Hotels', to: '/admine/hotels/approved' },

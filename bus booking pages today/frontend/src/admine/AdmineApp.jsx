@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
+import TransportDashboard from './pages/TransportDashboard';
 import UserManagement from './pages/UserManagement';
 import BookingManagement from './pages/BookingManagement';
 import AdminManagement from './pages/AdminManagement';
@@ -19,6 +20,7 @@ import HotelRooms from './pages/hotels/HotelRooms';
 import HotelBookings from './pages/hotels/HotelBookings';
 import HotelOffers from './pages/hotels/HotelOffers';
 import AddHotelOperator from './pages/hotels/AddHotelOperator';
+import HotelDashboard from './pages/hotels/HotelDashboard';
 import HotelOperators from './pages/hotels/HotelOperators';
 
 // ── Flight imports ─────────────────────────────────────────────────────────────
@@ -42,6 +44,7 @@ const AdmineApp = ({ user, onLogout }) => {
             <Routes>
                 {/* ── Core routes ── */}
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/transport/dashboard" element={<TransportDashboard />} />
                 <Route path="/operators" element={<OperatorsManagement />} />
                 <Route path="/operators/:operatorId/buses" element={<OperatorBuses />} />
                 <Route path="/routes" element={<BusManagement initialTab="routes" />} />
@@ -69,6 +72,7 @@ const AdmineApp = ({ user, onLogout }) => {
                 <Route path="/train/reports" element={<TrainReports />} />
 
                 {/* ── Hotel routes ── */}
+                <Route path="/hotels/dashboard" element={<HotelDashboard />} />
                 <Route path="/hotels" element={<AllHotels />} />
                 <Route path="/hotels/pending" element={<PendingHotels />} />
                 <Route path="/hotels/approved" element={<ApprovedHotels />} />
